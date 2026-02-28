@@ -25,7 +25,12 @@ export default function BasicMenu(payload: BasicMenuProps) {
         onClick={handleClick}
         sx={{
           textTransform: 'none',
-          color: 'white'
+          color: 'white',
+          fontSize: '14px',
+          fontWeight: '500',
+          letterSpacing: '0.5px',
+          paddingInline: '0',
+          height: '25px'
         }}
         endIcon={<KeyboardArrowDownIcon />}
       >
@@ -48,6 +53,6 @@ export default function BasicMenu(payload: BasicMenuProps) {
           </MenuItem>
         ))}
       </Menu>
-    </div>
+    </div >
   );
 }

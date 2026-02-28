@@ -43,6 +43,7 @@ export function Layout(props: PropsWithChildren) {
                         alignItems: 'center'
                     }}>
                         <BasicMenu
+                            className="nav-link"
                             label="Categories"
                             menuItems={[
                                 "All Products",
@@ -57,7 +58,6 @@ export function Layout(props: PropsWithChildren) {
                                 "Health & Beauty"
                             ]}
                         />
-                        {/* <Link className="nav-link" to="/">Categories</Link> */}
                         <Link className="nav-link" to="/">Home</Link>
                         <Link className="nav-link" to="/">Products</Link>
                         <Link className="nav-link" to="/">Orders</Link>
@@ -115,8 +115,6 @@ export function Layout(props: PropsWithChildren) {
                                     opacity: 0.5,
                                 },
                             },
-
-
                         }}
                     />
 
