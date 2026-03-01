@@ -30,7 +30,8 @@ export default function BasicMenu(payload: BasicMenuProps) {
           fontWeight: '500',
           letterSpacing: '0.5px',
           paddingInline: '0',
-          height: '25px'
+          height: '25px',
+          whiteSpace: 'nowrap',
         }}
         endIcon={<KeyboardArrowDownIcon />}
       >
@@ -48,7 +49,10 @@ export default function BasicMenu(payload: BasicMenuProps) {
         }}
       >
         {payload.menuItems.map((item, index) => (
-          <MenuItem key={index} onClick={handleClose}>
+          <MenuItem key={index} onClick={() => {
+            handleClose();
+            payload.onSelect?.(item);
+          }}>
             {item}
           </MenuItem>
         ))}
