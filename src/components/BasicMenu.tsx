@@ -47,6 +47,7 @@ export default function BasicMenu(payload: BasicMenuProps) {
             'aria-labelledby': 'basic-button',
           },
         }}
+        elevation={3}
       >
         {payload.menuItems.map((item, index) => (
           <MenuItem key={index} onClick={() => {

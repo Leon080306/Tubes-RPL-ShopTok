@@ -7,6 +7,7 @@ import ShoppingCartOutlinedIcon from '@mui/icons-material/ShoppingCartOutlined';
 import SearchIcon from '@mui/icons-material/Search';
 import '../assets/styles/navbar.css';
 import BasicMenu from "./BasicMenu";
+
 export function Layout(props: PropsWithChildren) {
     const [searchFocused, setSearchFocused] = useState(false);
     const [selectedCategory, setSelectedCategory] = useState('Categories');
@@ -88,20 +89,26 @@ export function Layout(props: PropsWithChildren) {
                 <Box sx={{
                     fontSize: '13px',
                     display: 'flex',
-                    gap: '24px',
+                    gap: '32px',
                     alignItems: 'center',
                     flexGrow: 1,
                     justifyContent: 'flex-end'
                 }}>
-                    <Box sx={{
-                        width: searchFocused ? "100%" : "300px",
-                        transition: "width 0.35s cubic-bezier(0.4, 0, 0.2, 1)",
-                        maxWidth: "100%",
-                    }}>
+                    <Box
+                        sx={{
+                            width: searchFocused ? "100%" : "400px",
+                            transition: "width 0.35s cubic-bezier(0.4, 0, 0.2, 1)",
+                            maxWidth: "100%",
+                        }}
+                    >
                         <TextField
                             fullWidth
-                            onFocus={() => setSearchFocused(true)}
-                            onBlur={() => setSearchFocused(false)}
+                            onFocus={() => {
+                                setSearchFocused(true);
+                            }}
+                            onBlur={() => {
+                                setSearchFocused(false);
+                            }}
                             InputProps={{
                                 endAdornment: (
                                     <InputAdornment position="end">
@@ -174,6 +181,11 @@ export function Layout(props: PropsWithChildren) {
                 </Box>
             </Toolbar>
         </AppBar>
+
+        <Snackbar>
+            
+        </Snackbar>
+
         <Box sx={{
             paddingInline: '64px'
         }}>
