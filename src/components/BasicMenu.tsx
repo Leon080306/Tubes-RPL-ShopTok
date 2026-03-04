@@ -8,6 +8,7 @@ import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 export default function BasicMenu(payload: BasicMenuProps) {
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
+
   const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
     setAnchorEl(event.currentTarget);
   };
@@ -52,9 +53,9 @@ export default function BasicMenu(payload: BasicMenuProps) {
         {payload.menuItems.map((item, index) => (
           <MenuItem key={index} onClick={() => {
             handleClose();
-            payload.onSelect?.(item);
+            payload.onSelect?.(item.name);
           }}>
-            {item}
+            {item.name}
           </MenuItem>
         ))}
       </Menu>
