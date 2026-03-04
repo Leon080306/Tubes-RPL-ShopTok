@@ -1,6 +1,6 @@
 /* eslint-disable react-hooks/set-state-in-effect */
-import { AppBar, Box, Button, InputAdornment, Paper, Stack, TextField, Toolbar, Typography } from "@mui/material";
-import { useState, type PropsWithChildren } from "react";
+import { AppBar, Box, Button, InputAdornment, Paper, Rating, Stack, TextField, Toolbar, Typography } from "@mui/material";
+import { useEffect, useState, type PropsWithChildren } from "react";
 import { Link } from "react-router";
 import AppLogoInline from '../assets/logos/AppLogo-inline.png';
 import AppLogoOnly from "../assets/logos/AppLogo-iconOnly.png";
@@ -13,6 +13,11 @@ import BasicMenu from "./BasicMenu";
 export function Layout(props: PropsWithChildren) {
     const [searchFocused, setSearchFocused] = useState(false);
     const [selectedCategory, setSelectedCategory] = useState('Categories');
+    const [search, setSearch] = useState("");
+
+    useEffect(() => {
+
+    }, [search])
 
     const categories = [
         {
@@ -44,6 +49,39 @@ export function Layout(props: PropsWithChildren) {
         },
         {
             name: "Health & Beauty"
+        },
+    ]
+
+    const products = [
+        {
+            name: "Wireless Earbuds",
+            rating: 5,
+            totalReviews: 121,
+            price: 120000
+        },
+        {
+            name: "Wireless Earbuds",
+            rating: 5,
+            totalReviews: 121,
+            price: 120000
+        },
+        {
+            name: "Wireless Earbuds",
+            rating: 5,
+            totalReviews: 121,
+            price: 120000
+        },
+        {
+            name: "Wireless Earbuds",
+            rating: 5,
+            totalReviews: 121,
+            price: 120000
+        },
+        {
+            name: "Wireless Earbuds",
+            rating: 5,
+            totalReviews: 121,
+            price: 120000
         },
     ]
 
@@ -129,6 +167,9 @@ export function Layout(props: PropsWithChildren) {
                     >
                         <TextField
                             fullWidth
+                            onChange={(e) => {
+                                setSearch(e.target.value);
+                            }}
                             onFocus={() => {
                                 setSearchFocused(true);
                             }}
@@ -198,69 +239,127 @@ export function Layout(props: PropsWithChildren) {
                                     width: "100%",
                                     padding: "18px 12px",
                                 }}>
-                                    <h2 style={{
-                                        fontSize: "18px",
-                                        margin: '0',
-                                        marginBottom: '16px',
-                                        paddingBottom: "16px",
-                                        borderBottom: '1px solid rgba(0, 0, 0, 0.2)'
-                                    }}>Popular Categories</h2>
+                                    {search.trim() === "" ? (
+                                        <>
+                                            <h2 style={{
+                                                fontSize: "18px",
+                                                margin: '0',
+                                                marginBottom: '16px',
+                                                paddingBottom: "12px",
+                                                borderBottom: '1px solid rgba(0, 0, 0, 0.2)'
+                                            }}>Popular Categories</h2>
+                                            <Box
+                                                sx={{
+                                                    display: "grid",
+                                                    gridTemplateColumns: "repeat(2, 1fr)",
+                                                    gap: 2,
+                                                }}
+                                            >
+                                                {categories.map((category) => (
+                                                    <Paper
+                                                        key={category.name}
+                                                        elevation={0}
+                                                        onClick={() => {
 
-                                    <Box sx={{
-                                        display: "grid",
-                                        gridTemplateColumns: "repeat(2, 1fr)",
-                                        gap: 2,
-                                    }}>
-                                        {categories.map((category) => (
-                                            <Paper elevation={0} sx={{
-                                                display: 'flex',
-                                                justifyContent: 'start',
-                                                gap: "18px",
-                                                alignItems: 'center',
-                                                flexGrow: 1,
-                                                backgroundColor: '#f6f6f6',
-                                                borderRadius: '12px',
-                                                padding: "12px 12px",
-                                                boxSizing: 'border-box',
-                                                flex: 1,
-                                                transition: "all 0.25s ease",
+                                                        }}
+                                                        sx={{
+                                                            display: "flex",
+                                                            gap: "18px",
+                                                            alignItems: "center",
+                                                            backgroundColor: "#f6f6f6",
+                                                            borderRadius: "12px",
+                                                            padding: "12px",
+                                                            transition: "all 0.25s ease",
+                                                            cursor: "pointer",
+                                                            "&:hover": {
+                                                                transform: "scale(1.02)",
+                                                                boxShadow: 5,
+                                                            },
+                                                        }}
+                                                    >
+                                                        <img
+                                                            src={AppLogoOnly}
+                                                            style={{ width: "60px", height: "60px", borderRadius: "6px" }}
+                                                            alt=""
+                                                        />
+                                                        <Box
+                                                            sx={{
+                                                                display: "flex",
+                                                                flexDirection: "column",
+                                                                justifyContent: "space-between",
+                                                                height: "50px",
+                                                                flexGrow: 1,
+                                                            }}
+                                                        >
+                                                            <Typography
+                                                                variant="subtitle1"
+                                                                sx={{ fontWeight: 600, lineHeight: 1.2 }}
+                                                            >
+                                                                {category.name}
+                                                            </Typography>
 
-                                                "&:hover": {
-                                                    transform: "scale(1.02)",
-                                                    boxShadow: 5,
-                                                },
-                                            }}>
-                                                <img src={AppLogoOnly} style={{ width: "60px", height: "60px", borderRadius: "6px" }} alt="" />
-                                                <Box style={{
+                                                            <Typography
+                                                                variant="body2"
+                                                                sx={{ color: "text.secondary", lineHeight: 1.2 }}
+                                                            >
+                                                                12 products available
+                                                            </Typography>
+                                                        </Box>
+                                                    </Paper>
+                                                ))}
+                                            </Box></>
+                                    ) : (
+                                        <Box sx={{
+                                            display: "flex",
+                                            flexDirection: "column",
+                                        }}>
+                                            {products.map((product, index) => (
+                                                <Box sx={{
                                                     display: "flex",
-                                                    flexDirection: "column",
+                                                    flexDirection: "row",
                                                     justifyContent: "space-between",
-                                                    height: "50px",
-                                                    flexGrow: 1,
+                                                    alignItems: "center",
+                                                    padding: "18px 12px",
+                                                    borderTop: index === 0 ? "none" : "1px solid rgba(0, 0, 0, 0.2)"
                                                 }}>
-                                                    <Typography
-                                                        variant="subtitle1"
-                                                        sx={{
-                                                            fontWeight: 600,
-                                                            lineHeight: 1.2,
-                                                        }}
-                                                    >
-                                                        {category.name}
-                                                    </Typography>
+                                                    <Box sx={{
+                                                        display: "flex",
+                                                        justifyContent: "start",
+                                                        alignItems: "center",
+                                                        gap: "18px",
 
-                                                    <Typography
-                                                        variant="body2"
-                                                        sx={{
-                                                            color: "text.secondary",
-                                                            lineHeight: 1.2,
-                                                        }}
-                                                    >
-                                                        12 products available
-                                                    </Typography>
+                                                    }}>
+                                                        <img
+                                                            src={AppLogoOnly}
+                                                            style={{ width: "60px", height: "60px", borderRadius: "6px" }}
+                                                            alt=""
+                                                        />
+                                                        <Typography sx={{
+                                                            fontSize: "14px"
+                                                        }}>
+                                                            {product.name}
+                                                        </Typography>
+                                                    </Box>
+
+                                                    <Box sx={{
+                                                        display: "flex",
+                                                        alignItems: "center",
+                                                        gap: "8px"
+                                                    }}>
+                                                        <Rating name="read-only" value={product.rating} readOnly sx={{
+                                                            color: '#003f29'
+                                                        }} />
+                                                        <Typography>({product.totalReviews})</Typography>
+                                                    </Box>
+
+                                                    <Typography>Rp. {product.price.toLocaleString("de-DE")}</Typography>
                                                 </Box>
-                                            </Paper>
-                                        ))}
-                                    </Box>
+                                            ))}
+                                        </Box>
+                                    )
+
+                                        // <Typography variant="body1">Finding products...</Typography>
+                                    }
                                 </Paper>
                             </Box>
                         )}
