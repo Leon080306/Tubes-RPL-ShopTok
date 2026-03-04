@@ -1,7 +1,9 @@
-import { AppBar, Box, Button, InputAdornment, Stack, TextField, Toolbar } from "@mui/material";
+/* eslint-disable react-hooks/set-state-in-effect */
+import { AppBar, Box, Button, InputAdornment, Paper, Stack, TextField, Toolbar, Typography } from "@mui/material";
 import { useState, type PropsWithChildren } from "react";
 import { Link } from "react-router";
 import AppLogoInline from '../assets/logos/AppLogo-inline.png';
+import AppLogoOnly from "../assets/logos/AppLogo-iconOnly.png";
 import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined';
 import ShoppingCartOutlinedIcon from '@mui/icons-material/ShoppingCartOutlined';
 import SearchIcon from '@mui/icons-material/Search';
@@ -11,6 +13,39 @@ import BasicMenu from "./BasicMenu";
 export function Layout(props: PropsWithChildren) {
     const [searchFocused, setSearchFocused] = useState(false);
     const [selectedCategory, setSelectedCategory] = useState('Categories');
+
+    const categories = [
+        {
+            name: "All Products"
+        },
+        {
+            name: "Electronics"
+        },
+        {
+            name: "Computers & Laptops"
+        },
+        {
+            name: "Phones & Tablets"
+        },
+        {
+            name: "Accessories"
+        },
+        {
+            name: "Home & Living"
+        },
+        {
+            name: "Fashion"
+        },
+        {
+            name: "Books"
+        },
+        {
+            name: "Sports"
+        },
+        {
+            name: "Health & Beauty"
+        },
+    ]
 
     const handleCategorySelect = (category: string) => {
         setSelectedCategory(category);
@@ -55,18 +90,7 @@ export function Layout(props: PropsWithChildren) {
                             className="nav-link"
                             label={selectedCategory}
                             onSelect={handleCategorySelect}
-                            menuItems={[
-                                "All Products",
-                                "Electronics",
-                                "Computers & Laptops",
-                                "Phones & Tablets",
-                                "Accessories",
-                                "Home & Living",
-                                "Fashion",
-                                "Books",
-                                "Sports",
-                                "Health & Beauty"
-                            ]}
+                            menuItems={categories}
                         />
                         <Box
                             sx={{
@@ -92,10 +116,12 @@ export function Layout(props: PropsWithChildren) {
                     gap: '32px',
                     alignItems: 'center',
                     flexGrow: 1,
-                    justifyContent: 'flex-end'
+                    justifyContent: 'flex-end',
+                    height: '100%'
                 }}>
                     <Box
                         sx={{
+                            position: "relative",
                             width: searchFocused ? "100%" : "400px",
                             transition: "width 0.35s cubic-bezier(0.4, 0, 0.2, 1)",
                             maxWidth: "100%",
@@ -154,6 +180,90 @@ export function Layout(props: PropsWithChildren) {
                                 },
                             }}
                         />
+                        {searchFocused && (
+                            <Box
+                                sx={{
+                                    position: "absolute",
+                                    top: "100%",
+                                    left: 0,
+                                    width: "100%",
+                                    mt: 1,
+                                    height: "100px",
+                                    zIndex: 10,
+                                    borderRadius: 2,
+                                }}
+                            >
+                                <Paper elevation={5} sx={{
+                                    backgroundColor: "white",
+                                    width: "100%",
+                                    padding: "18px 12px",
+                                }}>
+                                    <h2 style={{
+                                        fontSize: "18px",
+                                        margin: '0',
+                                        marginBottom: '16px',
+                                        paddingBottom: "16px",
+                                        borderBottom: '1px solid rgba(0, 0, 0, 0.2)'
+                                    }}>Popular Categories</h2>
+
+                                    <Box sx={{
+                                        display: "grid",
+                                        gridTemplateColumns: "repeat(2, 1fr)",
+                                        gap: 2,
+                                    }}>
+                                        {categories.map((category) => (
+                                            <Paper elevation={0} sx={{
+                                                display: 'flex',
+                                                justifyContent: 'start',
+                                                gap: "18px",
+                                                alignItems: 'center',
+                                                flexGrow: 1,
+                                                backgroundColor: '#f6f6f6',
+                                                borderRadius: '12px',
+                                                padding: "12px 12px",
+                                                boxSizing: 'border-box',
+                                                flex: 1,
+                                                transition: "all 0.25s ease",
+
+                                                "&:hover": {
+                                                    transform: "scale(1.02)",
+                                                    boxShadow: 5,
+                                                },
+                                            }}>
+                                                <img src={AppLogoOnly} style={{ width: "60px", height: "60px", borderRadius: "6px" }} alt="" />
+                                                <Box style={{
+                                                    display: "flex",
+                                                    flexDirection: "column",
+                                                    justifyContent: "space-between",
+                                                    height: "50px",
+                                                    flexGrow: 1,
+                                                }}>
+                                                    <Typography
+                                                        variant="subtitle1"
+                                                        sx={{
+                                                            fontWeight: 600,
+                                                            lineHeight: 1.2,
+                                                        }}
+                                                    >
+                                                        {category.name}
+                                                    </Typography>
+
+                                                    <Typography
+                                                        variant="body2"
+                                                        sx={{
+                                                            color: "text.secondary",
+                                                            lineHeight: 1.2,
+                                                        }}
+                                                    >
+                                                        12 products available
+                                                    </Typography>
+                                                </Box>
+                                            </Paper>
+                                        ))}
+                                    </Box>
+                                </Paper>
+                            </Box>
+                        )}
                     </Box>
 
                     <Box sx={{
@@ -181,10 +291,6 @@ export function Layout(props: PropsWithChildren) {
                 </Box>
             </Toolbar>
         </AppBar>
-
-        <Snackbar>
-            
-        </Snackbar>
 
         <Box sx={{
             paddingInline: '64px'
