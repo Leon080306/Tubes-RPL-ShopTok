@@ -1,4 +1,4 @@
-import { AppBar, Box, Button, InputAdornment, Stack, TextField, Toolbar } from "@mui/material";
+import { AppBar, Box, Button, InputAdornment, Snackbar, Stack, TextField, Toolbar } from "@mui/material";
 import { useState, type PropsWithChildren } from "react";
 import { Link } from "react-router";
 import AppLogoInline from '../assets/logos/AppLogo-inline.png';
@@ -183,7 +183,8 @@ export function Layout(props: PropsWithChildren) {
         </AppBar>
 
         <Snackbar>
-            
+            <span>
+            </span>
         </Snackbar>
 
         <Box sx={{
