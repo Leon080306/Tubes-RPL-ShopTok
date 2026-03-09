@@ -89,7 +89,9 @@ export function Layout(props: PropsWithChildren) {
         setSelectedCategory(category);
     }
 
-    return <Stack>
+    return <Stack sx={{
+        minHeight: "100vh"
+    }}>
         <AppBar position="static" sx={{
             backgroundColor: '#003f29',
             height: "80px"
@@ -369,7 +371,7 @@ export function Layout(props: PropsWithChildren) {
                         display: 'flex',
                         gap: '24px',
                     }}>
-                        <Link to='/'>
+                        <Link to='/my-account'>
                             <Button className="nav-link" startIcon={<PersonOutlinedIcon />} sx={{
                                 color: 'white',
                                 textDecoration: 'none',
@@ -392,7 +394,9 @@ export function Layout(props: PropsWithChildren) {
         </AppBar>
 
         <Box sx={{
-            paddingInline: '64px'
+            paddingInline: '64px',
+            flexGrow: 1,
+            display: "flex"
         }}>
             {props.children}
         </Box>
