@@ -19,14 +19,18 @@ import { Scrollbar, Navigation, Pagination, Autoplay } from "swiper/modules";
 import banner1 from "../assets/stock-images/home-bannerHeadset.jpg";
 import banner2 from "../assets/stock-images/home-bannerHandphone.jpg";
 import { useState } from "react";
+import { useNavigate } from "react-router";
 
 export default function Homepage() {
     const [rating, setRating] = useState<number | null>(null);
     const [sortPrice, setSortPrice] = useState<"high" | "low" | "">("");
     const [sortRating, setSortRating] = useState<"high" | "low" | "">("");
 
+    const navigate = useNavigate();
+
     const dummy = [
         {
+            id: 1,
             name: "Handphone",
             price: 100,
             rating: 4.5,
@@ -403,6 +407,7 @@ export default function Homepage() {
                         key={index}
                         // elevation={2}
                         sx={{
+                            cursor: "pointer",
                             borderRadius: 4,
                             boxShadow: "0px 0px 20px rgba(0, 0, 0, 0.27)",
                             p: 2,
@@ -413,6 +418,7 @@ export default function Homepage() {
                                 boxShadow: "0 8px 24px rgba(0,0,0,0.08)",
                             },
                         }}
+                        onClick={() => navigate(`/product/${product.id}`)}
                     >
                         <Box
                             sx={{

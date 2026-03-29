@@ -5,6 +5,7 @@ import { BrowserRouter } from 'react-router'
 import { Layout } from './components/Layout';
 import { AppRoutes } from './config/AppRoutes';
 import { theme } from './theme/theme';
+import ScrollToTop from './components/ScrollToTop';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -12,6 +13,7 @@ createRoot(document.getElementById('root')!).render(
       <CssBaseline />
       {/* <Provider store={store}> */}
       <BrowserRouter>
+      <ScrollToTop />
         <Layout>
           <AppRoutes />
         </Layout>
