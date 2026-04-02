@@ -1,5 +1,6 @@
 import {
     Box,
+    Button,
     Card,
     FormControl,
     IconButton,
@@ -434,10 +435,15 @@ export default function Homepage() {
                             }}
                         >
                             <IconButton
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    // masukkin fungsi like di sini
+                                }}
                                 sx={{
                                     position: "absolute",
                                     top: 8,
                                     right: 8,
+                                    zIndex: 1,
                                     backgroundColor: "white",
                                     width: 30,
                                     height: 30,
@@ -523,16 +529,17 @@ export default function Homepage() {
                         </Box>
 
                         <Box sx={{ mt: 2 }}>
-                            <Box
+                            <Button
+                                fullWidth
                                 sx={{
                                     border: "1px solid #0f5132",
-                                    borderRadius: 50,
-                                    textAlign: "center",
-                                    py: 0.8,
+                                    borderRadius: "999px",
+                                    textTransform: "none",
                                     fontSize: 13,
                                     fontWeight: 600,
-                                    cursor: "pointer",
-                                    transition: "0.2s",
+                                    py: 0.8,
+                                    color: "#0f5132",
+                                    overflow: "hidden", // penting untuk ripple biar clipped
                                     "&:hover": {
                                         backgroundColor: "#0f5132",
                                         color: "white",
@@ -540,7 +547,7 @@ export default function Homepage() {
                                 }}
                             >
                                 Add to Cart
-                            </Box>
+                            </Button>
                         </Box>
                     </Card>
                 ))}
