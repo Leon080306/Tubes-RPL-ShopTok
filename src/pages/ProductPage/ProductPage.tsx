@@ -337,7 +337,7 @@ export default function ProductPage() {
                         </Typography> */}
 
                         <Typography fontSize={13} color="#777" mt={0.5}>
-                            1 rating · 1 ulasan
+                            2 rating · 2 ulasan
                         </Typography>
                     </Box>
 
@@ -413,7 +413,7 @@ export default function ProductPage() {
                     <Box>
                         <Typography fontWeight={700}>ULASAN PILIHAN</Typography>
                         <Typography fontSize={13} color="#777">
-                            Menampilkan 1 dari 1 ulasan
+                            Menampilkan 2 ulasan
                         </Typography>
                     </Box>
                 </Box>
