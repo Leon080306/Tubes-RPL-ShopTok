@@ -12,9 +12,9 @@ import {
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import { useAppDispatch } from "../hooks/useAppDispatch";
-import { useAppSelector } from "../hooks/useAppSelector";
-import { authActions } from "../store/authSlice";
+import { useAppDispatch } from "../../hooks/useAppDispatch";
+import { useAppSelector } from "../../hooks/useAppSelector";
+import { authActions } from "../../store/authSlice";
 
 export default function SettingSecurity() {
   const navigate = useNavigate();

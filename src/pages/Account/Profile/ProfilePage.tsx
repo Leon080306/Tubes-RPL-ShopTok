@@ -1,5 +1,5 @@
 import { Box, Typography, Paper, Avatar, Stack, IconButton, List, ListItemButton, ListItemIcon, ListItemText, Button, Badge, } from "@mui/material";
-import { useAppSelector } from "../hooks/useAppSelector";
+import { useAppSelector } from "../../../hooks/useAppSelector";
 import { useNavigate } from "react-router";
 import SettingsIcon from "@mui/icons-material/Settings";
 import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";

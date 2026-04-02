@@ -8,10 +8,10 @@ import {
   IconButton,
 } from "@mui/material"
 import { useState } from "react"
-import { useAppSelector } from "../hooks/useAppSelector"
-import { useAppDispatch } from "../hooks/useAppDispatch"
+import { useAppSelector } from "../../../hooks/useAppSelector"
+import { useAppDispatch } from "../../../hooks/useAppDispatch"
 import { useNavigate } from "react-router"
-import { authActions } from "../store/authSlice"
+import { authActions } from "../../../store/authSlice"
 import ArrowBackIcon from "@mui/icons-material/ArrowBack"
 
 export default function EditProfilePage() {

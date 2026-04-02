@@ -43,6 +43,7 @@ function parseAddress(data: any): Address {
   return {
     id: crypto.randomUUID(),
     name: "",
+    receiver: "",
     phone: "",
     province: addr.state || "",
     city: addr.city || addr.town || addr.county || "",
@@ -94,6 +95,7 @@ export default function AddressForm({ initialData, onSubmit, onBack, title }: Ad
     initialData || {
       id: crypto.randomUUID(),
       name: "",
+      receiver: "",
       phone: "",
       province: "",
       city: "",
@@ -217,7 +219,7 @@ export default function AddressForm({ initialData, onSubmit, onBack, title }: Ad
             fullWidth
             label="Nama Penerima"
             name="receiver"
-            value={formData.name}
+            value={formData.receiver}
             onChange={handleChange}
             required
           />

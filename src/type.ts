@@ -37,6 +37,7 @@ export type OrderStats = {
 export type Address = {
     id: string
     name: string
+    receiver: string
     phone: string
     postalCode: string
     province: string

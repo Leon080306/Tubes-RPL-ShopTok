@@ -8,8 +8,8 @@ import {
 } from "@mui/material";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router";
-import { useAppDispatch } from "../hooks/useAppDispatch";
-import { authActions } from "../store/authSlice";
+import { useAppDispatch } from "../../hooks/useAppDispatch";
+import { authActions } from "../../store/authSlice";
 
 export default function LoginPage() {
   const navigate = useNavigate();

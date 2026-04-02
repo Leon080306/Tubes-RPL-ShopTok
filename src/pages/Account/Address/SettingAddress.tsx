@@ -9,7 +9,7 @@ import {
   Divider,
 } from "@mui/material";
 import { useNavigate } from "react-router";
-import { useAppSelector } from "../hooks/useAppSelector";
+import { useAppSelector } from "../../../hooks/useAppSelector";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import AddIcon from "@mui/icons-material/Add";
 import EditIcon from "@mui/icons-material/Edit";
@@ -117,7 +117,7 @@ export default function SettingAddress() {
                     color="primary"
                     onClick={() =>
                       navigate(`/settings/address/edit/${addr.id}`)
-                    } 
+                    }
                   >
                     <EditIcon fontSize="small" />
                   </IconButton>

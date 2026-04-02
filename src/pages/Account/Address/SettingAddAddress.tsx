@@ -1,6 +1,6 @@
-import AddressForm from "../components/AddressForm";
-import { useAppDispatch } from "../hooks/useAppDispatch";
-import { authActions } from "../store/authSlice";
+import AddressForm from "../../../components/AddressForm";
+import { useAppDispatch } from "../../../hooks/useAppDispatch";
+import { authActions } from "../../../store/authSlice";
 import { useNavigate } from "react-router";
 
 export default function AddressAddPage() {

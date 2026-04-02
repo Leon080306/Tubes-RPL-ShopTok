@@ -2,18 +2,19 @@ import { lazy } from "react";
 import { Route, Routes } from "react-router";
 
 const HomePage = lazy(() => import("../pages/HomePage"));
-const RegisterPage = lazy(() => import("../pages/RegisterPage"));
-const LoginPage = lazy(() => import("../pages/LoginPage"));
-const ProfilePage = lazy(() => import("../pages/ProfilePage"));
-const EditProfilePage = lazy(() => import("../pages/EditProfilePage"));
-const SettingProfilePage = lazy(() => import("../pages/SettingProfilePage"))
-const SettingAddress = lazy(() => import("../pages/SettingAddress"))
-const SettingAddAddress = lazy(() => import("../pages/SettingAddAddress"))
-const SettingEditAddress = lazy(() => import("../pages/SettingEditAddress"));
-const SettingRekening = lazy(() => import("../pages/SettingRekening"));
-const SettingRekeningCard = lazy(() => import("../pages/SettingRekeningCard"));
-const SettingRekeningBank = lazy(() => import("../pages/SettingRekeningBank"));
-const SettingKeamanan = lazy(() => import("../pages/SettingKeamanan"));
+const RegisterPage = lazy(() => import("../pages/Login&SignUp/RegisterPage"));
+const LoginPage = lazy(() => import("../pages/Login&SignUp/LoginPage"));
+const ProfilePage = lazy(() => import("../pages/Account/Profile/ProfilePage"));
+const EditProfilePage = lazy(() => import("../pages/Account/Profile/EditProfilePage"));
+const SettingProfilePage = lazy(() => import("../pages/Account/SettingProfilePage"))
+const SettingAddress = lazy(() => import("../pages/Account/Address/SettingAddress"))
+const SettingAddAddress = lazy(() => import("../pages/Account/Address/SettingAddAddress"))
+const SettingEditAddress = lazy(() => import("../pages/Account/Address/SettingEditAddress"));
+const SettingRekening = lazy(() => import("../pages/Account/Rekening/SettingRekening"));
+const SettingRekeningCard = lazy(() => import("../pages/Account/Rekening/SettingRekeningCard"));
+const SettingRekeningBank = lazy(() => import("../pages/Account/Rekening/SettingRekeningBank"));
+const SettingKeamanan = lazy(() => import("../pages/Account/SettingKeamanan"));
+const ProductPage = lazy(() => import("../pages/ProductPage/ProductPage"));
 
 export const AppRoutes = () => {
   return (
@@ -26,13 +27,12 @@ export const AppRoutes = () => {
       <Route path="/settings" element={<SettingProfilePage />} />
       <Route path="/settings/address" element={<SettingAddress />} />
       <Route path="/settings/address/add" element={<SettingAddAddress />} />
-      <Route path="/settings/address/edit/:id" element={<SettingEditAddress />}
-      />
+      <Route path="/settings/address/edit/:id" element={<SettingEditAddress />} />
       <Route path="/settings/bank" element={<SettingRekening />} />
       <Route path="/settings/bank/add-card" element={<SettingRekeningCard />} />
       <Route path="/settings/bank/add-rekening" element={<SettingRekeningBank />} />
       <Route path="/settings/security" element={<SettingKeamanan />} />
-
+      <Route path="/product/:id" element={<ProductPage />} />
     </Routes>
   );
 };

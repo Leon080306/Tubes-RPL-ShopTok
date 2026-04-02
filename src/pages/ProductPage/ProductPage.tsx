@@ -115,7 +115,7 @@ export default function ProductPage() {
                         }}
                     >
                         <img
-                            src="/your-image.png"
+                            src="/src/assets/stock-images/airpod.webp"
                             style={{ maxHeight: "80%", objectFit: "contain" }}
                         />
                     </Box>
@@ -125,12 +125,14 @@ export default function ProductPage() {
                         {[1, 2, 3, 4, 5].map((_, i) => (
                             <Box
                                 key={i}
+                                component="img"
                                 sx={{
                                     width: 80,
                                     height: 80,
                                     background: "#f5f5f5",
                                     borderRadius: 2,
                                 }}
+                                src="/src/assets/stock-images/airpod.webp"
                             />
                         ))}
                     </Box>

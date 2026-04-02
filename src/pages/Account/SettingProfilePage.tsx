@@ -1,8 +1,8 @@
 import { Box, Typography, Paper, List, ListItemButton, ListItemIcon, ListItemText, Divider, Button, Stack, IconButton, } from "@mui/material";
 import { useNavigate } from "react-router";
-import { useAppSelector } from "../hooks/useAppSelector";
-import { useAppDispatch } from "../hooks/useAppDispatch";
-import { authActions } from "../store/authSlice";
+import { useAppSelector } from "../../hooks/useAppSelector";
+import { useAppDispatch } from "../../hooks/useAppDispatch";
+import { authActions } from "../../store/authSlice";
 
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import LocationOnIcon from "@mui/icons-material/LocationOn";

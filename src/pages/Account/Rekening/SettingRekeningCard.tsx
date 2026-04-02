@@ -1,6 +1,6 @@
-import CardForm from "../components/CardForm"
-import { useAppDispatch } from "../hooks/useAppDispatch"
-import { authActions } from "../store/authSlice"
+import CardForm from "../../../components/CardForm"
+import { useAppDispatch } from "../../../hooks/useAppDispatch"
+import { authActions } from "../../../store/authSlice"
 import { useNavigate } from "react-router"
 
 export default function CardAddPage() {
