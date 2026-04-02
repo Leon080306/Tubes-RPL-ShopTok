@@ -8,7 +8,7 @@ const ProfilePage = lazy(() => import("../pages/ProfilePage"));
 const EditProfilePage = lazy(() => import("../pages/EditProfilePage"));
 const SettingProfilePage = lazy(() => import("../pages/SettingProfilePage"))
 const SettingAddress = lazy(() => import("../pages/SettingAddress"))
-const SettingAddAddress = lazy(() => import("../pages/SettingAddAddress") )
+const SettingAddAddress = lazy(() => import("../pages/SettingAddAddress"))
 const SettingEditAddress = lazy(() => import("../pages/SettingEditAddress"));
 const SettingRekening = lazy(() => import("../pages/SettingRekening"));
 const SettingRekeningCard = lazy(() => import("../pages/SettingRekeningCard"));
@@ -26,7 +26,7 @@ export const AppRoutes = () => {
       <Route path="/settings" element={<SettingProfilePage />} />
       <Route path="/settings/address" element={<SettingAddress />} />
       <Route path="/settings/address/add" element={<SettingAddAddress />} />
-      <Route path="/settings/address/edit/:id" element={<SettingEditAddress />} 
+      <Route path="/settings/address/edit/:id" element={<SettingEditAddress />}
       />
       <Route path="/settings/bank" element={<SettingRekening />} />
       <Route path="/settings/bank/add-card" element={<SettingRekeningCard />} />

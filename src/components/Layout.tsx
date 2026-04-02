@@ -21,21 +21,21 @@ import SearchIcon from "@mui/icons-material/Search";
 import "../assets/styles/navbar.css";
 import BasicMenu from "./BasicMenu";
 import { useAppSelector } from "../hooks/useAppSelector";
-import { useAppDispatch } from "../hooks/useAppDispatch";
-import { authActions } from "../store/authSlice";
+// import { useAppDispatch } from "../hooks/useAppDispatch";
+// import { authActions } from "../store/authSlice";
 import { useNavigate } from "react-router";
-import { Avatar, Menu, MenuItem } from "@mui/material";
+// import { Avatar, Menu, MenuItem } from "@mui/material";
 
 export function Layout(props: PropsWithChildren) {
   const [searchFocused, setSearchFocused] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("Categories");
   const [search, setSearch] = useState("");
 
-  const dispatch = useAppDispatch();
+  // const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const { userInfo } = useAppSelector((state) => state.auth);
 
-  useEffect(() => {}, [search]);
+  useEffect(() => { }, [search]);
 
   const categories = [
     {
@@ -311,7 +311,7 @@ export function Layout(props: PropsWithChildren) {
                               <Paper
                                 key={category.name}
                                 elevation={0}
-                                onClick={() => {}}
+                                onClick={() => { }}
                                 sx={{
                                   display: "flex",
                                   gap: "18px",
@@ -463,7 +463,7 @@ export function Layout(props: PropsWithChildren) {
                     fontWeight: 500,
                     cursor: "pointer",
                   }}
-                  onClick={() => navigate("/profile")} 
+                  onClick={() => navigate("/profile")}
                 >
                   Hi, {userInfo.firstName}
                 </Typography>

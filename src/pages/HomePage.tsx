@@ -57,7 +57,10 @@ export default function Homepage() {
     ];
 
     return (
-        <div>
+        <div style={{
+            width: "100%",
+            minWidth: 0
+        }}>
             <Box sx={{ mt: 10 }}>
                 <Swiper
                     modules={[Navigation, Pagination, Autoplay]}
@@ -207,7 +210,7 @@ export default function Homepage() {
                         <MenuItem value="" sx={{ opacity: 0.4 }}>
                             <em>All Price</em>
                         </MenuItem>
-                        <MenuItem value={"Highest"}>Highset Price</MenuItem>
+                        <MenuItem value={"Highest"}>Highest Price</MenuItem>
                         <MenuItem value={"Lowest"}>Lowest Price</MenuItem>
                     </Select>
                 </FormControl>

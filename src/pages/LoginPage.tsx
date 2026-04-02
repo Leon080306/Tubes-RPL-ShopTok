@@ -37,6 +37,7 @@ export default function LoginPage() {
     const userData = JSON.parse(savedUser);
 
     if (formData.email === userData.email && formData.password === userData.password) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { password, ...userWithoutPassword } = userData;
       dispatch(authActions.setUserInfo(userWithoutPassword));
 
@@ -56,6 +57,7 @@ export default function LoginPage() {
         justifyContent: "center",
         alignItems: "center",
         minHeight: "80vh",
+        width: "100%"
       }}
     >
       <Card

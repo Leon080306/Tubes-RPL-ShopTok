@@ -16,8 +16,8 @@ export type UserInfo = {
     password: string
     phoneNumber?: string
     role: 'customer' | 'seller'
-    shopTokPay: number    
-    coins: number        
+    shopTokPay: number
+    coins: number
     vouchers: number
     orderStats: OrderStats
     addresses: Address[]
@@ -37,8 +37,8 @@ export type OrderStats = {
 export type Address = {
     id: string
     name: string
-    receiver: string
     phone: string
+    postalCode: string
     province: string
     city: string
     district: string
@@ -48,8 +48,8 @@ export type Address = {
 
 export type CreditCard = {
     id: string
-    cardNumber: string 
-    expiryDate: string 
+    cardNumber: string
+    expiryDate: string
     cvv: string
     cardHolderName: string
 }
