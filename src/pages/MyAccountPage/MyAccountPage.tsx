@@ -7,6 +7,8 @@ import MailOutlinedIcon from '@mui/icons-material/MailOutlined';
 import FavoriteBorderOutlinedIcon from '@mui/icons-material/FavoriteBorderOutlined';
 import AssignmentOutlinedIcon from '@mui/icons-material/AssignmentOutlined';
 import { useNavigate, useParams } from "react-router";
+import AdressesPage from "./AddressesPage";
+import MyPurchasesPage from "./MyPurchasesPage";
 
 export default function MyAccountPage() {
     const { menu } = useParams();
@@ -24,44 +26,16 @@ export default function MyAccountPage() {
                     <h1 style={{ margin: 0 }}>Profile</h1>
                 </Paper>
             )
-            case "addresses": return (
+            case "addresses": return <AdressesPage />;
+            case "purchases": return <MyPurchasesPage />
+            case "notifications": return (
                 <Paper elevation={4} sx={{
                     height: "100%",
                     flex: 4,
                     boxSizing: "border-box",
                     padding: "12px 24px"
                 }}>
-                    <h1 style={{ margin: 0 }}>Addresses</h1>
-                </Paper>
-            )
-            case "change-password": return (
-                <Paper elevation={4} sx={{
-                    height: "100%",
-                    flex: 4,
-                    boxSizing: "border-box",
-                    padding: "12px 24px"
-                }}>
-                    <h1 style={{ margin: 0 }}>Change Password</h1>
-                </Paper>
-            )
-            case "purchases": return (
-                <Paper elevation={4} sx={{
-                    height: "100%",
-                    flex: 4,
-                    boxSizing: "border-box",
-                    padding: "12px 24px"
-                }}>
-                    <h1 style={{ margin: 0 }}>Purchases</h1>
-                </Paper>
-            )
-            case "chat": return (
-                <Paper elevation={4} sx={{
-                    height: "100%",
-                    flex: 4,
-                    boxSizing: "border-box",
-                    padding: "12px 24px"
-                }}>
-                    <h1 style={{ margin: 0 }}>Chat</h1>
+                    <h1 style={{ margin: 0 }}>Notifications</h1>
                 </Paper>
             )
             case "review": return (
@@ -104,7 +78,9 @@ export default function MyAccountPage() {
         width: "100%",
         gap: "32px",
         paddingBlock: "32px",
-        boxSizing: "border-box"
+        boxSizing: "border-box",
+        minHeight: 0,
+        height: "calc(100vh - 80px)"
     }}>
         <Paper elevation={4} sx={{
             height: "100%",
@@ -112,7 +88,12 @@ export default function MyAccountPage() {
             boxSizing: "border-box",
             padding: "24px",
             display: "flex",
-            flexDirection: "column"
+            flexDirection: "column",
+            overflow: "auto",
+            scrollbarWidth: "none",
+            "&::-webkit-scrollbar": {
+                display: "none"
+            },
         }}>
             <Box sx={{
                 width: "100%",
@@ -159,7 +140,6 @@ export default function MyAccountPage() {
             <MenuAccordion title="My Account" startIcon={<AccountBoxIcon />} buttons={[
                 { title: "Profile", onClick: () => navigate("/my-account/profile") },
                 { title: "Addresses", onClick: () => navigate("/my-account/addresses") },
-                { title: "Change Password", onClick: () => navigate("/my-account/change-password") }
             ]} />
 
             <MenuAccordion title="My Purchase" startIcon={<AssignmentOutlinedIcon />} buttons={[
@@ -173,7 +153,7 @@ export default function MyAccountPage() {
             ]} />
 
             <MenuAccordion title="Inbox" startIcon={<MailOutlinedIcon />} buttons={[
-                { title: "Chat", onClick: () => navigate("/my-account/chat") },
+                { title: "Notifications", onClick: () => navigate("/my-account/notifications") },
                 { title: "Review", onClick: () => navigate("/my-account/review") },
             ]} />
 
@@ -181,6 +161,13 @@ export default function MyAccountPage() {
 
         </Paper>
 
-        {renderMenu()}
+        <Box sx={{
+            display: "flex",
+            flex: 4,
+            height: "100%",
+            minHeight: 0
+        }}>
+            {renderMenu()}
+        </Box>
     </Box>
 }

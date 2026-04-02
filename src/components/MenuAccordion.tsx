@@ -46,25 +46,34 @@ export function MenuAccordion({ title, onClick, buttons, startIcon }: MenuAccord
                 paddingLeft: "0px",
             }}
         >
-            <Button variant="text" onClick={onClick} disableRipple startIcon={startIcon} sx={{
-                textTransform: "none",
-                width: "100%",
-                paddingBlock: "4px",
-                boxSizing: "border-box",
-                color: "black",
-                justifyContent: "flex-start",
-                fontWeight: "500",
-                letterSpacing: "0.5px",
+            <Button
+                component="div"
+                variant="text"
+                onClick={onClick}
+                disableRipple
+                startIcon={startIcon}
+                sx={{
+                    textTransform: "none",
+                    width: "100%",
+                    paddingBlock: "4px",
+                    boxSizing: "border-box",
+                    color: "black",
+                    justifyContent: "flex-start",
+                    fontWeight: "500",
+                    letterSpacing: "0.5px",
 
-                "& .MuiButton-startIcon": {
-                    marginRight: "6px",
-                    color: "#89a471"
-                },
+                    "& .MuiButton-startIcon": {
+                        marginRight: "6px",
+                        color: "#89a471"
+                    },
 
-                "&:hover": {
-                    backgroundColor: "transparent"
-                }
-            }}>{title}</Button>
+                    "&:hover": {
+                        backgroundColor: "transparent"
+                    }
+                }}
+            >
+                {title}
+            </Button>
         </AccordionSummary>
 
         <AccordionDetails sx={{
