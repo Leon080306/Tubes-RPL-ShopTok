@@ -19,7 +19,7 @@ const products = [
     },
 ]
 
-export default function MyPurchasesPage() {
+export default function OrderHistoryPage() {
     const [value, setValue] = useState('all');
 
     const handleChange = (event: React.SyntheticEvent, newValue: string) => {
@@ -35,6 +35,7 @@ export default function MyPurchasesPage() {
         display: "flex",
         flexDirection: "column",
         gap: "12px",
+        paddingInline: "64px"
     }}>
         <Paper elevation={2} sx={{
             width: '100%',

@@ -1,6 +1,6 @@
 import { Box, Typography, Paper, List, ListItemButton, ListItemIcon, ListItemText, Divider, Button, Stack, IconButton, } from "@mui/material";
 import { useNavigate } from "react-router";
-import { useAppSelector } from "../../hooks/useAppSelector";
+// import { useAppSelector } from "../../hooks/useAppSelector";
 import { useAppDispatch } from "../../hooks/useAppDispatch";
 import { authActions } from "../../store/authSlice";
 
@@ -12,11 +12,11 @@ import NotificationsIcon from "@mui/icons-material/Notifications";
 import LockIcon from "@mui/icons-material/Lock";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import LogoutIcon from "@mui/icons-material/Logout";
-import SwapHorizIcon from "@mui/icons-material/SwapHoriz";
+// import SwapHorizIcon from "@mui/icons-material/SwapHoriz";
 
 export default function SettingsPage() {
   const navigate = useNavigate();
-  const { userInfo } = useAppSelector((state) => state.auth);
+  // const { userInfo } = useAppSelector((state) => state.auth);
   const dispatch = useAppDispatch();
 
   const handleLogout = () => {

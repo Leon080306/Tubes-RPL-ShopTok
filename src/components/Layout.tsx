@@ -506,6 +506,7 @@ export function Layout(props: PropsWithChildren) {
       <Box
         sx={{
           paddingInline: "64px",
+          paddingBlock: "12px"
         }}
       >
         {props.children}
