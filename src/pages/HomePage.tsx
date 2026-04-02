@@ -443,7 +443,7 @@ export default function Homepage() {
                                     position: "absolute",
                                     top: 8,
                                     right: 8,
-                                    zIndex: 1,
+                                    zIndex: 10,
                                     backgroundColor: "white",
                                     width: 30,
                                     height: 30,
