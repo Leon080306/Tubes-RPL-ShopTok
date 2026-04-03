@@ -23,6 +23,7 @@ const SettingKeamanan = lazy(() => import("../pages/account/SettingKeamanan"));
 const ProductPage = lazy(() => import("../pages/products/ProductPage"));
 
 const OrderHistoryPage = lazy(() => import("../pages/orders/OrderHistoryPage"));
+const OrderDetailPage = lazy(() => import("../pages/orders/OrderDetailPage"));
 
 export const AppRoutes = () => {
   return (
@@ -49,6 +50,7 @@ export const AppRoutes = () => {
       <Route path="/product/:id" element={<ProductPage />} />
 
       <Route path="/orders" element={<OrderHistoryPage />} />
+      <Route path="/orders/detail" element={<OrderDetailPage />} />
     </Routes>
   );
 };
