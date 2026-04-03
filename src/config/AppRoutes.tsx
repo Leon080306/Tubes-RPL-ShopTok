@@ -24,6 +24,8 @@ const ProductPage = lazy(() => import("../pages/products/ProductPage"));
 
 const OrderHistoryPage = lazy(() => import("../pages/orders/OrderHistoryPage"));
 
+const CartPage = lazy(() => import("../pages/CartPage"));
+
 export const AppRoutes = () => {
   return (
     <Routes>
@@ -49,6 +51,8 @@ export const AppRoutes = () => {
       <Route path="/product/:id" element={<ProductPage />} />
 
       <Route path="/orders" element={<OrderHistoryPage />} />
+
+      <Route path="/cart" element={<CartPage />} />
     </Routes>
   );
 };
