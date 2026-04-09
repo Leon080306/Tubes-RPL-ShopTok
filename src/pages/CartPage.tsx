@@ -3,6 +3,7 @@ import StorefrontIcon from '@mui/icons-material/Storefront';
 import ChatIcon from '@mui/icons-material/Chat';
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import NumberSpinner from "../components/NumberSpinner";
 
 const products = [
     {
@@ -22,9 +23,9 @@ const products = [
 export default function CartPage() {
     return <Box sx={{
         width: "100%",
-        height: "100vh",
+        height: "calc(100vh - 104px)",
         display: "flex",
-        gap: "24px"
+        gap: "24px",
     }}>
         <Paper elevation={0} sx={{
             flex: 2.8,
@@ -102,8 +103,9 @@ export default function CartPage() {
                                 display: "flex",
                                 alignItems: "flex-start",
                                 paddingBlock: "18px",
+                                paddingBottom: index === products.length - 1 ? "0" : "18px",
                                 width: "100%",
-                                borderBottom: "1px solid rgba(0, 0, 0, 0.2)",
+                                borderBottom: index === products.length - 1 ? "none" : "1px solid rgba(0, 0, 0, 0.2)",
                                 gap: "12px",
                             }}>
                                 <Checkbox sx={{
@@ -128,7 +130,7 @@ export default function CartPage() {
                                     }}>
                                         <img
                                             src="/src/assets/logos/AppLogo-iconOnly.png"
-                                            style={{ width: "60px", height: "60px", borderRadius: "6px" }}
+                                            style={{ width: "80px", height: "80px", borderRadius: "6px" }}
                                             alt=""
                                         />
                                         <Box sx={{
@@ -160,20 +162,26 @@ export default function CartPage() {
                                         <Box sx={{
                                             display: "flex",
                                             alignItems: "center",
-                                            gap: "12px"
+                                            gap: "12px",
+                                            // border: "1px solid black",
                                         }}>
                                             <IconButton sx={{
                                                 padding: 0,
-                                                marginBottom: "-10px",
+                                                // marginBottom: "-10px",
                                             }}>
                                                 <FavoriteBorderIcon />
                                             </IconButton>
                                             <IconButton sx={{
                                                 padding: 0,
-                                                marginBottom: "-10px",
+                                                // marginBottom: "-10px",
                                             }}>
                                                 <DeleteOutlineIcon />
                                             </IconButton>
+                                            {/* set maxnya jadi banyak stock */}
+                                            <NumberSpinner defaultValue={1} min={1} max={99} size="small" sx={{
+                                                height: "36px",
+                                                width: "100px",
+                                            }} />
                                         </Box>
                                     </Box>
                                 </Box>
@@ -187,7 +195,8 @@ export default function CartPage() {
         <Paper elevation={0} sx={{
             flex: 1,
             height: "500px",
-            border: "1px solid rgba(0, 0, 0, 0.2)"
+            maxHeight: "calc(100vh - 104px)",
+            border: "1px solid rgba(0, 0, 0, 0.2)",
         }}>
 
         </Paper>

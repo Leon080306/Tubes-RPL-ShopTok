@@ -2,8 +2,8 @@ import { lazy } from "react";
 import { Route, Routes } from "react-router";
 
 const HomePage = lazy(() => import("../pages/HomePage"));
-const RegisterPage = lazy(() => import("../pages/login&signup/RegisterPage"));
-const LoginPage = lazy(() => import("../pages/login&signup/LoginPage"));
+const RegisterPage = lazy(() => import("../pages/login&signUp/RegisterPage"));
+const LoginPage = lazy(() => import("../pages/login&signUp/LoginPage"));
 
 const ProfilePage = lazy(() => import("../pages/account/profile/ProfilePage"));
 const EditProfilePage = lazy(() => import("../pages/account/profile/EditProfilePage"));
