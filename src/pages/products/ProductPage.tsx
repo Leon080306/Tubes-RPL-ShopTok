@@ -14,11 +14,20 @@ import HomeIcon from "@mui/icons-material/Home";
 import StarIcon from "@mui/icons-material/Star";
 import { useState } from "react";
 import { useNavigate } from "react-router";
+import { LetterAvatar } from "../../components/LetterAvatar";
 
 // import banner2 from "../../assets/stock-images/home-bannerHandphone.jpg";
 
 export default function ProductPage() {
-    const colors = ["#e57373", "#424242", "#a5d6a7", "#e0e0e0", "#547da6"];
+    // const colors = ["#e57373", "#424242", "#a5d6a7", "#e0e0e0", "#547da6"];
+    const colors = [
+      { name: "Merah" },
+      { name: "Abu-abu" },
+      { name: "Hijau" },
+      { name: "Putih" },
+      { name: "Biru" },
+      { name: "Kuning" },
+    ];
     const [qty, setQty] = useState(1);
     const [selectedColor, setSelectedColor] = useState(0);
 
@@ -173,7 +182,7 @@ export default function ProductPage() {
                     <Typography sx={{ color: "#777", mt: 1 }}>
                         Pilihan:{" "}
                         <strong style={{ color: "black" }}>
-                            {colors[selectedColor]}
+                            {colors[selectedColor].name}
                         </strong>
                     </Typography>
 
@@ -181,28 +190,55 @@ export default function ProductPage() {
 
                     {/* COLOR */}
                     <Typography fontWeight={600} mb={1}>
-                        Choose a Color
+                        Pilih Tipe
                     </Typography>
 
-                    <Box sx={{ display: "flex", gap: 1.5 }}>
-                        {colors.map((color_pallete, i) => (
+                    <Box sx={{ display: "flex", gap: 1.5, flexWrap: "wrap" }}>
+                      {colors.map((color, i) => {
+                        const isActive = selectedColor === i;
+
+                        return (
+                          <Box
+                            key={i}
+                            onClick={() => setSelectedColor(i)}
+                            sx={{
+                              position: "relative",
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 1,
+                              px: 1.5,
+                              py: 1,
+                              borderRadius: "999px",
+                              fontSize: 14,
+                              fontWeight: 500,
+                              cursor: "pointer",
+                              border: isActive ? "1px solid #22c55e" : "1px solid #e5e7eb",
+                              backgroundColor: isActive ? "#dcfce7" : "#f3f4f6",
+                              color: isActive ? "#15803d" : "#6b7280",
+                              transition: "all 0.2s ease",
+                            }}
+                          >
+                            {/* ICON (optional sepatu kecil) */}
                             <Box
-                                key={i}
-                                onClick={() => setSelectedColor(i)}
-                                sx={{
-                                    width: 36,
-                                    height: 36,
-                                    borderRadius: "50%",
-                                    background: color_pallete,
-                                    border:
-                                        selectedColor === i
-                                            ? "3px solid #16a34a"
-                                            : "1px solid #ccc",
-                                    cursor: "pointer",
-                                }}
+                              component="img"
+                              src="/shoe.png" // ganti sesuai asset kamu
+                              sx={{
+                                width: 18,
+                                height: 18,
+                                borderRadius: 0.5,
+                                objectFit: "cover",
+                                opacity: isActive ? 1 : 0.6,
+                              }}
                             />
-                        ))}
+
+                            {/* TEXT */}
+                            {color.name}
+
+                          </Box>
+                        );
+                      })}
                     </Box>
+
 
                     <Divider sx={{ my: 3 }} />
 
@@ -440,13 +476,13 @@ export default function ProductPage() {
                             {/* LEFT */}
                             <Box sx={{ display: "flex", gap: 2 }}>
                                 {/* AVATAR */}
-                                <Box
-                                    sx={{
-                                        width: 40,
-                                        height: 40,
-                                        borderRadius: "50%",
-                                        background: "#e5e7eb",
-                                    }}
+                                <LetterAvatar
+                                  name={item.name}
+                                  sx={{
+                                    width: 40,
+                                    height: 40,
+                                    fontSize: 14
+                                  }}
                                 />
 
                                 {/* CONTENT */}
