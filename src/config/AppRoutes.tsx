@@ -1,5 +1,6 @@
 import { lazy } from "react";
 import { Route, Routes } from "react-router";
+import CheckoutPage from "../pages/orders/CheckoutPage";
 
 const HomePage = lazy(() => import("../pages/HomePage"));
 const RegisterPage = lazy(() => import("../pages/login&signup/RegisterPage"));
@@ -50,6 +51,7 @@ export const AppRoutes = () => {
       <Route path="/product/:id" element={<ProductPage />} />
 
       <Route path="/orders" element={<OrderHistoryPage />} />
+      <Route path="/orders/checkout" element={<CheckoutPage />} />
       <Route path="/orders/detail" element={<OrderDetailPage />} />
     </Routes>
   );
