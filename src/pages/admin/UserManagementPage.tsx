@@ -1,0 +1,402 @@
+import { useMemo, useState } from "react";
+import {
+  Box,
+  Container,
+  Typography,
+  Paper,
+  Avatar,
+  IconButton,
+  Button,
+  Chip,
+  Select,
+  MenuItem,
+} from "@mui/material";
+import EditIcon from "@mui/icons-material/Edit";
+import DeleteIcon from "@mui/icons-material/Delete";
+import AddIcon from "@mui/icons-material/Add";
+import SearchIcon from "@mui/icons-material/Search";
+import CloseIcon from "@mui/icons-material/Close";
+import InputBase from "@mui/material/InputBase";
+import FilterListIcon from "@mui/icons-material/FilterList";
+import SortIcon from "@mui/icons-material/Sort";
+import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
+import { useNavigate } from "react-router";
+
+export default function UserManagementPage() {
+  const navigate = useNavigate();
+  const themeColor = "#16a34a";
+
+  const [search, setSearch] = useState("");
+  const [selectedRole, setSelectedRole] = useState("");
+  const [selectedStatus, setSelectedStatus] = useState("");
+  const [sortNama, setSortNama] = useState("");
+
+  const [users, setUsers] = useState([
+    {
+      id: "1",
+      name: "Andi Pratama",
+      email: "andi.pratama@example.com",
+      phone: "081234567890",
+      role: "admin",
+      status: "active",
+    },
+    {
+      id: "2",
+      name: "Budi Santoso",
+      email: "budi.santoso@example.com",
+      phone: "082345678901",
+      role: "customer",
+      status: "suspended",
+    },
+    {
+      id: "3",
+      name: "Citra Lestari",
+      email: "citra.lestari@example.com",
+      phone: "083456789012",
+      role: "seller",
+      status: "suspended",
+    },
+    {
+      id: "4",
+      name: "Dewi Anggraini",
+      email: "dewi.anggraini@example.com",
+      phone: "084567890123",
+      role: "customer",
+      status: "active",
+    },
+    {
+      id: "5",
+      name: "Eko Saputra",
+      email: "eko.saputra@example.com",
+      phone: "085678901234",
+      role: "seller",
+      status: "active",
+    },
+    {
+      id: "6",
+      name: "Fajar Nugroho",
+      email: "fajar.nugroho@example.com",
+      phone: "086789012345",
+      role: "customer",
+      status: "active",
+    },
+    {
+      id: "7",
+      name: "Gita Permata",
+      email: "gita.permata@example.com",
+      phone: "087890123456",
+      role: "seller",
+      status: "active",
+    },
+    {
+      id: "8",
+      name: "Hendra Wijaya",
+      email: "hendra.wijaya@example.com",
+      phone: "088901234567",
+      role: "customer",
+      status: "active",
+    },
+    {
+      id: "9",
+      name: "Indah Sari",
+      email: "indah.sari@example.com",
+      phone: "089012345678",
+      role: "seller",
+      status: "active",
+    },
+    {
+      id: "10",
+      name: "Joko Susilo",
+      email: "joko.susilo@example.com",
+      phone: "081112223334",
+      role: "customer",
+      status: "active",
+    },
+    {
+      id: "11",
+      name: "Kartika Putri",
+      email: "kartika.putri@example.com",
+      phone: "082223334445",
+      role: "seller",
+      status: "active",
+    },
+    {
+      id: "12",
+      name: "Lukman Hakim",
+      email: "lukman.hakim@example.com",
+      phone: "083334445556",
+      role: "customer",
+      status: "active",
+    },
+    {
+      id: "13",
+      name: "Maya Oktaviani",
+      email: "maya.oktaviani@example.com",
+      phone: "084445556667",
+      role: "seller",
+      status: "active",
+    },
+    {
+      id: "14",
+      name: "Nanda Prakoso",
+      email: "nanda.prakoso@example.com",
+      phone: "085556667778",
+      role: "customer",
+      status: "active",
+    },
+    {
+      id: "15",
+      name: "Putri Ayu",
+      email: "putri.ayu@example.com",
+      phone: "086667778889",
+      role: "seller",
+      status: "active",
+    },
+  ]);
+
+  /* ================= FILTER + SORT ================= */
+  const filteredUsers = useMemo(() => {
+    return users
+      .filter((user) => {
+        const matchSearch = user.name
+          .toLowerCase()
+          .includes(search.toLowerCase());
+
+        const matchRole = selectedRole
+          ? user.role === selectedRole
+          : true;
+
+        const matchStatus = selectedStatus
+          ? user.status === selectedStatus
+          : true;
+
+        return matchSearch && matchRole && matchStatus;
+      })
+      .sort((a, b) => {
+        if (sortNama === "asc") return a.name.localeCompare(b.name);
+        if (sortNama === "desc") return b.name.localeCompare(a.name);
+        return 0;
+      });
+  }, [users, search, selectedRole, selectedStatus, sortNama]);
+
+  const handleDelete = (id: string) => {
+    if (!confirm("Yakin ingin menghapus user ini?")) return;
+    setUsers((prev) => prev.filter((u) => u.id !== id));
+  };
+
+  const handleChangeStatus = (id: string, newStatus: string) => {
+    setUsers((prev) =>
+      prev.map((user) =>
+        user.id === id ? { ...user, status: newStatus } : user
+      )
+    );
+  };
+
+  return (
+    <Container maxWidth="lg" sx={{ py: 4 }}>
+      {/* HEADER */}
+      <Box sx={{ mb: 4, display: "flex", justifyContent: "space-between" }}>
+        <Box>
+          <Typography variant="h4" sx={{ fontWeight: 800 }}>
+            User Management
+          </Typography>
+          <Typography sx={{ color: "#666", mt: 1 }}>
+            Kelola semua user yang tersedia
+          </Typography>
+        </Box>
+
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+          onClick={() => navigate("/admin/create-user")}
+          sx={{
+            bgcolor: themeColor,
+            borderRadius: "10px",
+            textTransform: "none",
+            height: "100%"
+          }}
+        >
+          Tambah User
+        </Button>
+      </Box>
+
+      {/* SEARCH */}
+      <Box sx={{ mb: 3 }}>
+        <Box sx={{ display: "flex", alignItems: "center", px: 2, border: "1px solid #E0E0E0", borderRadius: "14px" }}>
+          <SearchIcon sx={{ color: "#999", mr: 1 }} />
+          <InputBase
+            placeholder="Cari user..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            sx={{ flex: 1 }}
+          />
+          {search && (
+            <IconButton onClick={() => setSearch("")}>
+              <CloseIcon fontSize="small" />
+            </IconButton>
+          )}
+        </Box>
+      </Box>
+
+      {/* FILTER */}
+      <Box sx={{ mb: 3, display: "flex", gap: 2 }}>
+        <FilterListIcon />
+
+        <Select
+          value={selectedRole}
+          onChange={(e) => setSelectedRole(e.target.value)}
+          displayEmpty
+          IconComponent={KeyboardArrowDownIcon}
+        >
+          <MenuItem value="" sx={{color: "#515151b7"}}>Semua Role</MenuItem>
+          <MenuItem value="admin">Admin</MenuItem>
+          <MenuItem value="customer">Customer</MenuItem>
+          <MenuItem value="seller">Seller</MenuItem>
+        </Select>
+
+        <Select
+          value={selectedStatus}
+          onChange={(e) => setSelectedStatus(e.target.value)}
+          displayEmpty
+          IconComponent={KeyboardArrowDownIcon}
+        >
+          <MenuItem value="" sx={{color: "#515151b7"}}>Semua Status</MenuItem>
+          <MenuItem value="active">Active</MenuItem>
+          <MenuItem value="suspended">Suspended</MenuItem>
+        </Select>
+
+        <Select
+          value={sortNama}
+          onChange={(e) => setSortNama(e.target.value)}
+          displayEmpty
+          IconComponent={SortIcon}
+        >
+          <MenuItem value="" sx={{color: "#515151b7"}}>Urutkan Nama</MenuItem>
+          <MenuItem value="asc">A-Z</MenuItem>
+          <MenuItem value="desc">Z-A</MenuItem>
+        </Select>
+
+        <Button
+          onClick={() => {
+            setSearch("");
+            setSelectedRole("");
+            setSelectedStatus("");
+            setSortNama("");
+          }}
+        >
+          Reset
+        </Button>
+      </Box>
+
+      {/* LIST */}
+      <Paper sx={{ borderRadius: "20px", overflow: "hidden" }}>
+        {/* HEADER */}
+        <Box sx={{ display: "flex", px: 3, py: 2, bgcolor: "#FAFAFA" }}>
+          <Box sx={{ width: "35%" }}>User</Box>
+          <Box sx={{ width: "25%" }}>Phone</Box>
+          <Box sx={{ width: "15%" }}>Role</Box>
+          <Box sx={{ width: "15%" }}>Status</Box>
+          <Box sx={{ width: "10%", textAlign: "right" }}>Aksi</Box>
+        </Box>
+
+        {filteredUsers.map((user) => (
+          <Box key={user.id} sx={{ display: "flex", px: 3, py: 2 }}>
+            {/* USER */}
+            <Box sx={{ width: "35%", display: "flex", gap: 2 }}>
+              <Avatar variant="rounded" sx={{ width: 56, height: 56 }}>
+                {user.name[0]}
+              </Avatar>
+
+              <Box>
+                <Typography sx={{ fontWeight: 700 }}>{user.name}</Typography>
+                <Typography variant="body2" sx={{ color: "#999" }}>
+                  {user.email}
+                </Typography>
+              </Box>
+            </Box>
+
+            {/* PHONE */}
+            <Box sx={{ width: "25%" }}>
+              <Typography>{user.phone}</Typography>
+            </Box>
+
+            {/* ROLE */}
+            <Box sx={{ width: "15%" }}>
+              <Chip
+                label={user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+                size="small"
+                sx={{
+                  bgcolor:
+                    user.role === "admin"
+                      ? "#F3E8FF"
+                      : user.role === "seller"
+                      ? "#FFF4E5"
+                      : "#E3F2FD",
+                  color:
+                    user.role === "admin"
+                      ? "#7E22CE"
+                      : user.role === "seller"
+                      ? "#EA580C"
+                      : "#1E88E5",
+                  fontWeight: 600,
+                }}
+              />
+            </Box>
+
+            {/* STATUS */}
+            <Box sx={{ width: "15%" }}>
+              <Select
+                value={user.status}
+                onChange={(e) =>
+                  handleChangeStatus(user.id, e.target.value)
+                }
+                size="small"
+                IconComponent={KeyboardArrowDownIcon}
+                sx={{
+                  borderRadius: "20px",
+                  fontSize: "0.75rem",
+                  fontWeight: 600,
+                  height: "28px",
+
+                  bgcolor:
+                    user.status === "active" ? "#E8F5E9" : "#FFEBEE",
+                  color:
+                    user.status === "active" ? "#2E7D32" : "#C62828",
+
+                  "& .MuiSelect-select": {
+                    display: "flex",
+                    alignItems: "center",
+                    px: 1.5,
+                  },
+
+                  "& fieldset": { border: "none" },
+                }}
+              >
+                <MenuItem value="active">Active</MenuItem>
+                <MenuItem value="suspended">Suspended</MenuItem>
+              </Select>
+            </Box>
+
+
+            {/* ACTION */}
+            <Box sx={{ width: "10%", display: "flex", justifyContent: "flex-end", gap: 1 }}>
+              <IconButton onClick={() => navigate(`/admin/edit-user/${user.id}`)}>
+                <EditIcon />
+              </IconButton>
+
+              <IconButton onClick={() => handleDelete(user.id)}>
+                <DeleteIcon />
+              </IconButton>
+            </Box>
+          </Box>
+        ))}
+
+        {filteredUsers.length === 0 && (
+          <Box sx={{ py: 6, textAlign: "center" }}>
+            <Typography>Tidak ada user ditemukan</Typography>
+          </Box>
+        )}
+      </Paper>
+    </Container>
+  );
+}

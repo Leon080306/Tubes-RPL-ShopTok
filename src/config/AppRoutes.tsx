@@ -26,6 +26,8 @@ const ProductPage = lazy(() => import("../pages/products/ProductPage"));
 const OrderHistoryPage = lazy(() => import("../pages/orders/OrderHistoryPage"));
 const OrderDetailPage = lazy(() => import("../pages/orders/OrderDetailPage"));
 
+const UserManagementPage = lazy(() => import ("../pages/admin/UserManagementPage"))
+
 export const AppRoutes = () => {
   return (
     <Routes>
@@ -53,6 +55,8 @@ export const AppRoutes = () => {
       <Route path="/orders" element={<OrderHistoryPage />} />
       <Route path="/orders/checkout" element={<CheckoutPage />} />
       <Route path="/orders/detail" element={<OrderDetailPage />} />
+
+      <Route path="/admin/user-management" element={<UserManagementPage/>} />
     </Routes>
   );
 };
