@@ -27,6 +27,8 @@ const ProductPage = lazy(() => import("../pages/products/ProductPage"));
 
 const OrderHistoryPage = lazy(() => import("../pages/orders/OrderHistoryPage"));
 
+const CartPage = lazy(() => import("../pages/CartPage"));
+
 const ShopProfile = lazy(() => import("../pages/Shop/ShopProfile"))
 
 const ShopDashboard = lazy(() => import("../pages/Shop/SellerDashboard"));
@@ -59,6 +61,9 @@ export const AppRoutes = () => {
 
         <Route path="/product/:id" element={<ProductPage />} />
 
+        <Route path="/orders" element={<OrderHistoryPage />} />
+
+        <Route path="/cart" element={<CartPage />} />
         <Route path="/orders" element={<OrderHistoryPage />} />
 
         <Route path="/shop/:shopId" element={<ShopProfile />} />

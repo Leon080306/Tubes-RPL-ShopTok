@@ -490,7 +490,7 @@ export function Layout(props: PropsWithChildren) {
                 </Link>
               )}
 
-              <Link to="/">
+              <Link to="/cart">
                 <Button
                   className="nav-link"
                   startIcon={<ShoppingCartOutlinedIcon />}
@@ -512,7 +512,8 @@ export function Layout(props: PropsWithChildren) {
       <Box
         sx={{
           paddingInline: "64px",
-          paddingBlock: "12px"
+          paddingBlock: "12px",
+          backgroundColor: "#f0f3f7"
         }}
       >
         {props.children}
