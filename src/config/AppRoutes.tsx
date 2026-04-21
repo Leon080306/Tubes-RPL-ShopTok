@@ -6,20 +6,12 @@ import { Layout } from "../components/Layout";
 const HomePage = lazy(() => import("../pages/HomePage"));
 const RegisterPage = lazy(() => import("../pages/Login&SignUp/RegisterPage"));
 const LoginPage = lazy(() => import("../pages/Login&SignUp/LoginPage"));
-const RegisterPage = lazy(() => import("../pages/Login&SignUp/RegisterPage"));
-const LoginPage = lazy(() => import("../pages/Login&SignUp/LoginPage"));
 
-const ProfilePage = lazy(() => import("../pages/Account/Profile/ProfilePage"));
-const EditProfilePage = lazy(() => import("../pages/Account/Profile/EditProfilePage"));
 const ProfilePage = lazy(() => import("../pages/Account/Profile/ProfilePage"));
 const EditProfilePage = lazy(() => import("../pages/Account/Profile/EditProfilePage"));
 
 const SettingProfilePage = lazy(() => import("../pages/Account/SettingProfilePage"))
-const SettingProfilePage = lazy(() => import("../pages/Account/SettingProfilePage"))
 
-const SettingAddress = lazy(() => import("../pages/Account/Address/SettingAddress"))
-const SettingAddAddress = lazy(() => import("../pages/Account/Address/SettingAddAddress"))
-const SettingEditAddress = lazy(() => import("../pages/Account/Address/SettingEditAddress"));
 const SettingAddress = lazy(() => import("../pages/Account/Address/SettingAddress"))
 const SettingAddAddress = lazy(() => import("../pages/Account/Address/SettingAddAddress"))
 const SettingEditAddress = lazy(() => import("../pages/Account/Address/SettingEditAddress"));
@@ -27,11 +19,7 @@ const SettingEditAddress = lazy(() => import("../pages/Account/Address/SettingEd
 const SettingRekening = lazy(() => import("../pages/Account/Rekening/SettingRekening"));
 const SettingRekeningCard = lazy(() => import("../pages/Account/Rekening/SettingRekeningCard"));
 const SettingRekeningBank = lazy(() => import("../pages/Account/Rekening/SettingRekeningBank"));
-const SettingRekening = lazy(() => import("../pages/Account/Rekening/SettingRekening"));
-const SettingRekeningCard = lazy(() => import("../pages/Account/Rekening/SettingRekeningCard"));
-const SettingRekeningBank = lazy(() => import("../pages/Account/Rekening/SettingRekeningBank"));
 
-const SettingKeamanan = lazy(() => import("../pages/Account/SettingKeamanan"));
 
 const ChatToko = lazy(() => import("../pages/Chat/ChatToko"))
 const SettingKeamanan = lazy(() => import("../pages/Account/SettingKeamanan"));
