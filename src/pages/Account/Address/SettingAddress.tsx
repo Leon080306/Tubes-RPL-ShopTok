@@ -55,11 +55,11 @@ export default function SettingAddress() {
         {addresses.length > 0 ? (
           addresses.map((addr) => (
             <Paper
-              key={addr.id}
+              key={addr.address_id}
               sx={{
                 p: 3,
                 borderRadius: 2,
-                border: addr.isDefault ? "1px solid #003f29" : "none",
+                border: addr.is_default ? "1px solid #003f29" : "none",
               }}
             >
               <Stack
@@ -74,13 +74,13 @@ export default function SettingAddress() {
                     alignItems="center"
                     sx={{ mb: 1 }}
                   >
-                    <Typography fontWeight={700}>{addr.receiver}</Typography>
+                    <Typography fontWeight={700}>{addr.full_name}</Typography>
                     <Divider
                       orientation="vertical"
                       flexItem
                       sx={{ height: 16, my: "auto" }}
                     />
-                    <Typography color="text.secondary">{addr.phone}</Typography>
+                    <Typography color="text.secondary">{userInfo?.first_name}</Typography>
                   </Stack>
 
                   <Typography
@@ -88,15 +88,15 @@ export default function SettingAddress() {
                     color="text.secondary"
                     sx={{ mb: 1, fontWeight: 700 }}
                   >
-                    {addr.name}
+                    {addr.address}
                   </Typography>
 
                   <Typography variant="body2" sx={{ color: "#555" }}>
-                    {addr.fullAddress}, {addr.district}, {addr.city},{" "}
+                    {addr.subdistrict}, {addr.city},{" "}
                     {addr.province}
                   </Typography>
 
-                  {addr.isDefault && (
+                  {addr.is_default && (
                     <Chip
                       label="Utama"
                       size="small"
@@ -116,7 +116,7 @@ export default function SettingAddress() {
                     size="small"
                     color="primary"
                     onClick={() =>
-                      navigate(`/settings/address/edit/${addr.id}`)
+                      navigate(`/settings/address/edit/${addr.address_id}`)
                     }
                   >
                     <EditIcon fontSize="small" />

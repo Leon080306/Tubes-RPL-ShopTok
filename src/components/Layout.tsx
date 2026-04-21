@@ -37,6 +37,10 @@ export function Layout(props: PropsWithChildren) {
 
   useEffect(() => { }, [search]);
 
+  const handleProfileNavigation = () => {
+    navigate("/profile")
+  };
+
   const categories = [
     {
       name: "All Products",
@@ -106,6 +110,8 @@ export function Layout(props: PropsWithChildren) {
   const handleCategorySelect = (category: string) => {
     setSelectedCategory(category);
   };
+
+  console.log("ISI USER INFO:", userInfo);
 
   return (
     <Stack>
@@ -463,9 +469,9 @@ export function Layout(props: PropsWithChildren) {
                     fontWeight: 500,
                     cursor: "pointer",
                   }}
-                  onClick={() => navigate("/profile")}
+                  onClick={handleProfileNavigation}
                 >
-                  Hi, {userInfo.firstName}
+                  Hi, {userInfo.first_name || "User"}
                 </Typography>
               ) : (
                 <Link to="/signup">
@@ -513,4 +519,7 @@ export function Layout(props: PropsWithChildren) {
       </Box>
     </Stack>
   );
+
+  console.log(userInfo)
+
 }

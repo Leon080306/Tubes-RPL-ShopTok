@@ -1,4 +1,16 @@
-import { Box, Typography, Paper, List, ListItemButton, ListItemIcon, ListItemText, Divider, Button, Stack, IconButton, } from "@mui/material";
+import {
+  Box,
+  Typography,
+  Paper,
+  List,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
+  Divider,
+  Button,
+  Stack,
+  IconButton,
+} from "@mui/material";
 import { useNavigate } from "react-router";
 // import { useAppSelector } from "../../hooks/useAppSelector";
 import { useAppDispatch } from "../../hooks/useAppDispatch";
@@ -33,7 +45,6 @@ export default function SettingsPage() {
         bgcolor: "#f9f9f9",
       }}
     >
-
       <Paper
         elevation={0}
         sx={{
@@ -45,7 +56,7 @@ export default function SettingsPage() {
           borderBottom: "1px solid #eee",
         }}
       >
-        <IconButton onClick={() => navigate(-1)} sx={{ mr: 2 }}>
+        <IconButton onClick={() => navigate("/profile")} sx={{ mr: 2 }}>
           <ArrowBackIcon sx={{ color: "#003f29" }} />
         </IconButton>
         <Typography variant="h6" fontWeight={700}>
@@ -105,7 +116,7 @@ export default function SettingsPage() {
         </List>
       </Paper>
 
-      <Typography
+      {/* <Typography
         variant="subtitle2"
         sx={{ p: 2, mt: 1, color: "text.secondary", fontWeight: 700 }}
       >
@@ -135,7 +146,7 @@ export default function SettingsPage() {
             <ChevronRightIcon color="action" />
           </ListItemButton>
         </List>
-      </Paper>
+      </Paper> */}
 
       <Stack spacing={1.5} sx={{ p: 3, mt: 2 }}>
         <Button

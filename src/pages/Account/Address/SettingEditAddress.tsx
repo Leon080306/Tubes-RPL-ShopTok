@@ -11,7 +11,9 @@ export default function AddressEditPage() {
 
   // Ambil data alamat yang mau diedit dari Redux
   const { userInfo } = useAppSelector((state) => state.auth);
-  const addressToEdit = userInfo?.addresses?.find((addr) => addr.id === id);
+  const addressToEdit = userInfo?.addresses?.find(
+    (addr) => String(addr.address_id) === String(id)
+  );
 
   if (!addressToEdit) {
     return <div>Alamat tidak ditemukan!</div>;

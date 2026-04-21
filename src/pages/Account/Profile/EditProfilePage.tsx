@@ -20,8 +20,8 @@ export default function EditProfilePage() {
   const navigate = useNavigate()
 
   const [formData, setFormData] = useState({
-    firstName: userInfo?.firstName || "",
-    lastName: userInfo?.lastName || "",
+    firstName: userInfo?.first_name || "",
+    lastName: userInfo?.last_name || "",
     email: userInfo?.email || "",
   })
 

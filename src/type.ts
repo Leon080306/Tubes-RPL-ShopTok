@@ -10,19 +10,25 @@ export type Category = {
 }
 
 export type UserInfo = {
-    firstName: string
-    lastName: string
+    first_name: string
+    last_name: string
     email: string
     password: string
-    phoneNumber?: string
-    role: 'customer' | 'seller'
-    shopTokPay: number
+    phone_number?: string
+    profile_pic?: string
+    role: 'admin' | 'customer' | 'seller'
+    status: 'active' | 'suspended'
+
+    shopTok_Pay: number
     coins: number
     vouchers: number
+
     orderStats: OrderStats
     addresses: Address[]
     cards: CreditCard[]
     bankAccounts: BankAccount[]
+    chats?: ChatSession[]
+    shop_info?: ShopInfo
 }
 
 // ini buat yg di profile page bisa tracking orderan kitaa
@@ -35,16 +41,14 @@ export type OrderStats = {
 
 // ni buat setting addressnya
 export type Address = {
-    id: string
-    name: string
-    receiver: string
-    phone: string
-    postalCode: string
+    address_id: number
+    user_id: number
+    full_name: string
+    address: string
     province: string
     city: string
-    district: string
-    fullAddress: string
-    isDefault: boolean
+    subdistrict: string
+    is_default: boolean
 }
 
 export type CreditCard = {
@@ -65,6 +69,38 @@ export type BankAccount = {
 export type AuthState = {
     userInfo?: UserInfo
     isLoading: boolean
+}
+
+export type ChatMessage = {
+    chat_id: number
+    sender_role: 'customer' | 'seller'
+    message: string
+    created_at: string 
+}
+
+export type ChatSession = {
+    shop_id: number
+    shop_name: string
+    shop_logo?: string
+    last_message: string
+    unread_count: number
+    messages: ChatMessage[]
+}
+
+export type ShopInfo = {
+    shop_id: string      
+    owner_id: string
+    name: string
+    description?: string 
+    profile_pic?: string
+    banner?: string
+    is_approved: boolean
+    status: "active" | "suspended"
+    
+    owner?: UserInfo 
+    products?: any[] // ntr diganti pake type  Product. blom ada soalnya
+    createdAt?: string
+    updatedAt?: string
 }
 
 export type AsyncDataState = 'idle' | 'loading' | 'fulfilled' | 'error'

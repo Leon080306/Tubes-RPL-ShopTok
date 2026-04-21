@@ -74,11 +74,11 @@ export default function ProfilePage() {
           <Avatar
             sx={{ width: 100, height: 100, bgcolor: "#003f29", fontSize: 40 }}
           >
-            {userInfo.firstName[0]}
+            {userInfo.first_name[0]}
           </Avatar>
           <Box sx={{ flexGrow: 1 }}>
             <Typography variant="h5" fontWeight={700}>
-              {userInfo.firstName} {userInfo.lastName}
+              {userInfo.first_name} {userInfo.last_name}
             </Typography>
             <Typography variant="h6" color="text.secondary" fontWeight={400}>
               {userInfo.email}
@@ -103,8 +103,8 @@ export default function ProfilePage() {
           {[
             {
               label: "ShopTok Pay",
-              val: userInfo.shopTokPay
-                ? `Rp${userInfo.shopTokPay.toLocaleString("id-ID")}`
+              val: userInfo.shopTok_Pay
+                ? `Rp${userInfo.shopTok_Pay.toLocaleString("id-ID")}`
                 : "Rp0",
               icon: (
                 <AccountBalanceWalletIcon
@@ -218,3 +218,5 @@ export default function ProfilePage() {
     </Box>
   );
 }
+
+
