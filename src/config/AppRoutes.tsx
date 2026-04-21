@@ -1,6 +1,6 @@
 import { lazy } from "react";
 import { Route, Routes } from "react-router";
-import { Layout } from "../components/Layout";
+import CheckoutPage from "../pages/orders/CheckoutPage";
 
 const HomePage = lazy(() => import("../pages/HomePage"));
 const RegisterPage = lazy(() => import("../pages/Login&SignUp/RegisterPage"));
@@ -32,6 +32,7 @@ const CartPage = lazy(() => import("../pages/CartPage"));
 const ShopProfile = lazy(() => import("../pages/Shop/ShopProfile"))
 
 const ShopDashboard = lazy(() => import("../pages/Shop/SellerDashboard"));
+const OrderDetailPage = lazy(() => import("../pages/orders/OrderDetailPage"));
 
 export const AppRoutes = () => {
   return (
@@ -61,6 +62,9 @@ export const AppRoutes = () => {
 
         <Route path="/product/:id" element={<ProductPage />} />
 
+        <Route path="/orders" element={<OrderHistoryPage />} />
+        <Route path="/orders/checkout" element={<CheckoutPage />} />
+        <Route path="/orders/detail" element={<OrderDetailPage />} />
         <Route path="/orders" element={<OrderHistoryPage />} />
 
         <Route path="/cart" element={<CartPage />} />
