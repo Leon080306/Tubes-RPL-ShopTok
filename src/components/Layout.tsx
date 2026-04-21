@@ -513,7 +513,9 @@ export function Layout() {
         sx={{
           paddingInline: "64px",
           paddingBlock: "12px",
-          backgroundColor: "#f0f3f7"
+          backgroundColor: "#f0f3f7",
+          height: "calc(100vh - 80px)",
+          overflow: "auto",
         }}
       >
         <Outlet />

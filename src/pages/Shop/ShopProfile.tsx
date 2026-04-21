@@ -3,13 +3,12 @@ import { useParams, useNavigate } from "react-router"
 import {
   Avatar, Box, Typography, Button, Stack, Container,
   Paper, Divider, Tabs, Tab, Grid, Card, CardContent, CardMedia,
-  MenuItem, Select, FormControl, InputLabel, InputBase, IconButton,
+  MenuItem, Select, FormControl, InputBase, IconButton,
   List, ListItemButton, ListItemText
 } from "@mui/material";
 import {
   Verified as VerifiedIcon,
   Storefront as StorefrontIcon,
-  LocalOffer as VoucherIcon,
   Search as SearchIcon,
   Chat as ChatIcon,
   Add as AddIcon
@@ -60,10 +59,10 @@ export default function ShopProfile() {
   ];
 
   const categories = ["Smartphone", "Electronics", "Accessories", "Home Appliances"];
-  
+
   const filteredAndSortedProducts = useMemo(() => {
     // 1. Filter berdasarkan Search Query & Kategori
-    let result = dummyProducts.filter((p) => {
+    const result = dummyProducts.filter((p) => {
       const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesCategory = selectedCategory ? p.category === selectedCategory : true;
       return matchesSearch && matchesCategory;
@@ -73,7 +72,7 @@ export default function ShopProfile() {
     return [...result].sort((a, b) => {
       switch (sortValue) {
         case "terbaru":
-          return b.id - a.id; 
+          return b.id - a.id;
         case "terlaris":
           return parseInt(b.sales) - parseInt(a.sales);
         case "harga-asc":
@@ -82,7 +81,7 @@ export default function ShopProfile() {
           return b.price - a.price;
         case "populer":
         default:
-          return b.rating - a.rating; 
+          return b.rating - a.rating;
       }
     });
   }, [searchQuery, sortValue, selectedCategory]);
@@ -104,11 +103,11 @@ export default function ShopProfile() {
   // --- COMPONENT: SEARCH BAR ---
   const SearchBar = () => (
     <Paper component="form" sx={{ p: '2px 4px', display: 'flex', alignItems: 'center', width: { xs: '100%', md: 300 }, bgcolor: '#f0f0f0', boxShadow: 'none' }}>
-      <InputBase 
-        sx={{ ml: 1, flex: 1, fontSize: '0.9rem' }} 
-        placeholder="Cari di toko ini..." 
+      <InputBase
+        sx={{ ml: 1, flex: 1, fontSize: '0.9rem' }}
+        placeholder="Cari di toko ini..."
         value={searchQuery}
-        onChange={(e) => setSearchQuery(e.target.value)} 
+        onChange={(e) => setSearchQuery(e.target.value)}
       />
       <IconButton type="button" sx={{ p: '10px' }}><SearchIcon /></IconButton>
     </Paper>
@@ -148,6 +147,7 @@ export default function ShopProfile() {
   );
 
   // --- REUSABLE PRODUCT GRID ---
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const ProductGrid = ({ products }: { products: any[] }) => (
     <Grid container spacing={2}>
       {products.map((p) => (
@@ -215,8 +215,8 @@ export default function ShopProfile() {
         {/* 2. NAVBAR INTERNAL */}
         <Paper elevation={1} sx={{ borderRadius: 1 }}>
           <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" alignItems="center" sx={{ px: 2 }}>
-            <Tabs 
-              value={tabValue} 
+            <Tabs
+              value={tabValue}
               onChange={(_, v) => setTabValue(v)}
               TabIndicatorProps={{ sx: { bgcolor: '#003f29', height: 3 } }}
               sx={{ '& .MuiTab-root': { fontWeight: 'bold', color: '#555', '&.Mui-selected': { color: '#003f29' } } }}
@@ -232,13 +232,13 @@ export default function ShopProfile() {
         {/* 3. CONTENT AREA */}
         <Box sx={{ mt: 2 }}>
           {tabValue === 0 && <HalamanUtama />}
-          
+
           {tabValue === 1 && (
             <Box sx={{ mt: 3 }}>
               <Paper sx={{ p: 2, mb: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
                 <Typography variant="body2">Urutkan:</Typography>
                 {['Populer', 'Terbaru', 'Terlaris'].map((t) => (
-                  <Button key={t} size="small" variant={sortValue === t.toLowerCase() ? "contained" : "text"} 
+                  <Button key={t} size="small" variant={sortValue === t.toLowerCase() ? "contained" : "text"}
                     onClick={() => setSortValue(t.toLowerCase())}
                     sx={{ bgcolor: sortValue === t.toLowerCase() ? '#003f29' : 'transparent', textTransform: 'none' }}>
                     {t}

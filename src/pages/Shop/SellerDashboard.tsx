@@ -22,6 +22,7 @@ import {
 } from "recharts";
 import ProductsList from "./ProductsList";
 import OrdersList from "./OrdersList";
+import { useNavigate } from "react-router-dom";
 
 // ─── Brand colors ────────────────────────────────────────────────────────────
 const PRIMARY = "#003f29" as const;
@@ -778,11 +779,21 @@ function DashboardContent() {
 // ─── Main Dashboard ───────────────────────────────────────────────────────────
 export default function SellerDashboard() {
   const [activeNav, setActiveNav] = useState<NavId>("dashboard");
+  const navigate = useNavigate();
 
   return (
     <ThemeProvider theme={theme}>
       <Box sx={{ display: "flex", height: "100vh", bgcolor: BG, overflow: "hidden" }}>
-        <Sidebar active={activeNav} onSelect={setActiveNav} />
+        <Sidebar
+          active={activeNav}
+          onSelect={(id) => {
+            if (id === "messages") {
+              navigate("/chattoko");
+            } else {
+              setActiveNav(id);
+            }
+          }}
+        />
 
         <Box sx={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
           {/* ✅ CONTENT AREA */}

@@ -63,32 +63,23 @@ export const AppRoutes = () => {
         <Route path="/settings/security" element={<SettingKeamanan />} />
 
         <Route path="/chattoko" element={<ChatToko />} />
-        <Route path="/settings/security" element={<SettingKeamanan />} />
 
         <Route path="/product/:id" element={<ProductPage />} />
 
         <Route path="/orders" element={<OrderHistoryPage />} />
         <Route path="/orders/checkout" element={<CheckoutPage />} />
         <Route path="/orders/detail" element={<OrderDetailPage />} />
-        <Route path="/orders" element={<OrderHistoryPage />} />
 
         <Route path="/cart" element={<CartPage />} />
-        <Route path="/orders" element={<OrderHistoryPage />} />
 
         <Route path="/shop/:shopId" element={<ShopProfile />} />
-        <Route path="/orders" element={<OrderHistoryPage />} />
+        <Route path="/wishlist" element={<Wishlist />} />
+        <Route path="/admin/user-management" element={<UserManagementPage />} />
       </Route>
 
       <Route path="/shop/dashboard" element={<ShopDashboard />} />
 
-      <Route path="/orders" element={<OrderHistoryPage />} />
 
-      <Route path="/wishlist" element={<Wishlist />} />
-      <Route path="/orders" element={<OrderHistoryPage />} />
-      <Route path="/orders/checkout" element={<CheckoutPage />} />
-      <Route path="/orders/detail" element={<OrderDetailPage />} />
-
-      <Route path="/admin/user-management" element={<UserManagementPage />} />
     </Routes>
   );
 };
