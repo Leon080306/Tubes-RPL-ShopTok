@@ -37,10 +37,23 @@ export default function RegisterPage() {
 
     if (formData.password.length < 8) {
       alert("Password must be at least 8 characters long!");
-      return
+      return;
     }
 
-    localStorage.setItem("user_data", JSON.stringify({ ...formData, role }));
+    const userData = {
+      user_id: crypto.randomUUID(), 
+      first_name: formData.firstName, 
+      last_name: formData.lastName, 
+      email: formData.email,
+      phone_number: formData.phoneNumber,
+      password: formData.password,
+      role: role,
+      shopTok_pay: 0,
+      coins: 0,
+      vouchers: 0,
+    };
+
+    localStorage.setItem("user_data", JSON.stringify(userData));
 
     console.log("Coba cek sign up ", { ...formData, role });
     alert(`Berhasil sign up (ntr diganti biar lbh bagus hehe)`);

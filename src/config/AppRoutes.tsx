@@ -21,9 +21,13 @@ const SettingRekeningBank = lazy(() => import("../pages/Account/Rekening/Setting
 
 const SettingKeamanan = lazy(() => import("../pages/Account/SettingKeamanan"));
 
+const ChatToko = lazy(() => import("../pages/Chat/ChatToko"))
+
 const ProductPage = lazy(() => import("../pages/products/ProductPage"));
 
 const OrderHistoryPage = lazy(() => import("../pages/orders/OrderHistoryPage"));
+
+const ShopProfile = lazy(() => import("../pages/Shop/ShopProfile"))
 
 const ShopDashboard = lazy(() => import("../pages/Shop/SellerDashboard"));
 
@@ -50,8 +54,14 @@ export const AppRoutes = () => {
 
         <Route path="/settings/security" element={<SettingKeamanan />} />
 
+        <Route path="/chattoko" element={<ChatToko />} />
+        <Route path="/settings/security" element={<SettingKeamanan />} />
+
         <Route path="/product/:id" element={<ProductPage />} />
 
+        <Route path="/orders" element={<OrderHistoryPage />} />
+
+        <Route path="/shop/:shopId" element={<ShopProfile />} />
         <Route path="/orders" element={<OrderHistoryPage />} />
       </Route>
 

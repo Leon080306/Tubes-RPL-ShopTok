@@ -37,10 +37,21 @@ export default function LoginPage() {
     const userData = JSON.parse(savedUser);
 
     if (formData.email === userData.email && formData.password === userData.password) {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { password, ...userWithoutPassword } = userData;
-      dispatch(authActions.setUserInfo(userWithoutPassword));
+      const userToDispatch = { ...userData }
 
+      if (userToDispatch.role === "seller" && !userToDispatch.shop_info) {
+        userToDispatch.shop_info = {
+          shop_id: "SHOP-" + Math.random().toString(36).substring(2, 9),
+          owner_id: userToDispatch.user_id,
+          name: "Toko " + userToDispatch.firstName,
+          is_approved: true,
+          status: "active",
+          banner: "", // Default kosong dulu
+          profile_pic: ""
+        };
+      }
+      
+      dispatch(authActions.setUserInfo(userToDispatch))
       localStorage.setItem("isLoggedIn", "true");
 
       alert(`Welcome back, ${userData.firstName}!`);
