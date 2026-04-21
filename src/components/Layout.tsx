@@ -11,8 +11,8 @@ import {
   Toolbar,
   Typography,
 } from "@mui/material";
-import { useEffect, useState, type PropsWithChildren } from "react";
-import { Link } from "react-router";
+import { useEffect, useState } from "react";
+import { Link, Outlet } from "react-router";
 import AppLogoInline from "../assets/logos/AppLogo-inline.png";
 import AppLogoOnly from "../assets/logos/AppLogo-iconOnly.png";
 import PersonOutlinedIcon from "@mui/icons-material/PersonOutlined";
@@ -26,7 +26,7 @@ import { useAppSelector } from "../hooks/useAppSelector";
 import { useNavigate } from "react-router";
 // import { Avatar, Menu, MenuItem } from "@mui/material";
 
-export function Layout(props: PropsWithChildren) {
+export function Layout() {
   const [searchFocused, setSearchFocused] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("Categories");
   const [search, setSearch] = useState("");
@@ -516,7 +516,7 @@ export function Layout(props: PropsWithChildren) {
           backgroundColor: "#f0f3f7"
         }}
       >
-        {props.children}
+        <Outlet />
       </Box>
     </Stack>
   );
