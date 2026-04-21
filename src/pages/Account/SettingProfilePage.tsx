@@ -31,9 +31,18 @@ export default function SettingsPage() {
   // const { userInfo } = useAppSelector((state) => state.auth);
   const dispatch = useAppDispatch();
 
-  const handleLogout = () => {
-    dispatch(authActions.logout());
-    navigate("/login");
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/auth/logout", {
+        method: "POST",
+        credentials: "include", // penting untuk cookie
+      });
+
+      dispatch(authActions.logout());
+      navigate("/login");
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   return (

@@ -24,40 +24,39 @@ export default function LoginPage() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const savedUser = localStorage.getItem("user_data");
-    if (!savedUser) {
-      alert("Account not found! Sign up first");
-      navigate("/signup");
-      return;
-    }
+    try {
+      const response = await fetch("api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+        }),
+      });
 
-    const userData = JSON.parse(savedUser);
+      const data = await response.json();
 
-    if (formData.email === userData.email && formData.password === userData.password) {
-      const userToDispatch = { ...userData }
-
-      if (userToDispatch.role === "seller" && !userToDispatch.shop_info) {
-        userToDispatch.shop_info = {
-          shop_id: "SHOP-" + Math.random().toString(36).substring(2, 9),
-          owner_id: userToDispatch.user_id,
-          name: "Toko " + userToDispatch.firstName,
-          is_approved: true,
-          status: "active",
-          banner: "", // Default kosong dulu
-          profile_pic: ""
-        };
+      if (!response.ok) {
+        alert(data.message || "Login failed");
+        return;
       }
-      
-      dispatch(authActions.setUserInfo(userToDispatch))
+
+      dispatch(authActions.setUserInfo(data.user));
+
       localStorage.setItem("isLoggedIn", "true");
 
-      alert(`Welcome back, ${userData.firstName}!`);
+      alert(`Welcome back, ${data.user.first_name}!`);
       navigate("/");
-    } else {
-      alert("Invalid email or password. Please try again.");
+
+    } catch (error) {
+      console.error(error);
+      alert("Login error");
     }
   };
 

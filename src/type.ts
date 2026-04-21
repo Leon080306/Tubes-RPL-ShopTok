@@ -10,6 +10,7 @@ export type Category = {
 }
 
 export type UserInfo = {
+    user_id: string
     first_name: string
     last_name: string
     email: string
@@ -40,16 +41,32 @@ export type OrderStats = {
 }
 
 // ni buat setting addressnya
+// Internal form state (UI-facing)
+export type AddressFormState = {
+    id: string;
+    name: string;        // address label/nickname
+    receiver: string;    // maps to full_name
+    phone: string;       // maps to phone_number
+    province: string;
+    city: string;
+    district: string;    // maps to sub_district
+    postalCode: string;
+    fullAddress: string; // maps to address
+    isDefault: boolean;
+};
+
+// API/DB shape
 export type Address = {
-    address_id: number
-    user_id: number
-    full_name: string
-    address: string
-    province: string
-    city: string
-    subdistrict: string
-    is_default: boolean
-}
+    address_id?: string;
+    user_id?: string;
+    full_name: string;
+    address: string;
+    province: string;
+    city: string;
+    sub_district: string;
+    phone_number: string;
+    is_default: boolean;
+};
 
 export type CreditCard = {
     id: string
@@ -75,7 +92,7 @@ export type ChatMessage = {
     chat_id: number
     sender_role: 'customer' | 'seller'
     message: string
-    created_at: string 
+    created_at: string
 }
 
 export type ChatSession = {
@@ -88,16 +105,16 @@ export type ChatSession = {
 }
 
 export type ShopInfo = {
-    shop_id: string      
+    shop_id: string
     owner_id: string
     name: string
-    description?: string 
+    description?: string
     profile_pic?: string
     banner?: string
     is_approved: boolean
     status: "active" | "suspended"
-    
-    owner?: UserInfo 
+
+    owner?: UserInfo
     products?: any[] // ntr diganti pake type  Product. blom ada soalnya
     createdAt?: string
     updatedAt?: string

@@ -32,7 +32,7 @@ export default function RegisterPage() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (formData.password.length < 8) {
@@ -40,24 +40,37 @@ export default function RegisterPage() {
       return;
     }
 
-    const userData = {
-      user_id: crypto.randomUUID(), 
-      first_name: formData.firstName, 
-      last_name: formData.lastName, 
-      email: formData.email,
-      phone_number: formData.phoneNumber,
-      password: formData.password,
-      role: role,
-      shopTok_pay: 0,
-      coins: 0,
-      vouchers: 0,
-    };
+    try {
+      const response = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          first_name: formData.firstName,
+          last_name: formData.lastName,
+          email: formData.email,
+          phone_number: formData.phoneNumber,
+          rawPassword: formData.password,
+          role: role,
+        }),
+      });
 
-    localStorage.setItem("user_data", JSON.stringify(userData));
+      const data = await response.json();
 
-    console.log("Coba cek sign up ", { ...formData, role });
-    alert(`Berhasil sign up (ntr diganti biar lbh bagus hehe)`);
-    navigate("/login");
+      if (!response.ok) {
+        alert(data.message || "Register failed");
+        return;
+      }
+
+      alert("Register successful!");
+      navigate("/login");
+
+    } catch (error) {
+      console.error(error);
+      alert("Register error");
+    }
   };
 
   return (
@@ -216,6 +229,7 @@ function RoleCard({
 }: {
   value: string;
   label: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   icon: any;
   active: boolean;
 }) {
