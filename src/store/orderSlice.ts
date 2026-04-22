@@ -11,11 +11,11 @@ export const checkoutOrder = createAsyncThunk(
     'order/checkout',
     async (payload: { address_id: string; voucher_id?: string }, { getState, rejectWithValue }) => {
         try {
-            const state = getState() as RootState;
-            const token = state.auth.userInfo?.token;
+            // const state = getState() as RootState;
+            // const token = state.auth.userInfo?.token;
 
             const response = await axios.post(`${API_URL}/checkout`, payload, {
-                headers: { Authorization: `Bearer ${token}` }
+                withCredentials: true
             });
             return response.data;
         } catch (error: any) {
@@ -29,11 +29,11 @@ export const cancelOrder = createAsyncThunk(
     'order/cancel',
     async (order_id: string, { getState, rejectWithValue }) => {
         try {
-            const state = getState() as RootState;
-            const token = state.auth.userInfo?.token;
+            // const state = getState() as RootState;
+            // const token = state.auth.userInfo?.token;
 
             const response = await axios.patch(`${API_URL}/cancel/${order_id}`, {}, {
-                headers: { Authorization: `Bearer ${token}` }
+                withCredentials: true
             });
             return { order_id, message: response.data.message };
         } catch (error: any) {
@@ -125,11 +125,11 @@ export const fetchOrderDetail = createAsyncThunk(
     'order/fetchDetail',
     async (order_id: string, { getState, rejectWithValue }) => {
         try {
-            const state = getState() as RootState;
-            const token = state.auth.userInfo?.token;
+            // const state = getState() as RootState;
+            // const token = state.auth.userInfo?.token;
 
             const response = await axios.get(`${API_URL}/${order_id}`, {
-                headers: { Authorization: `Bearer ${token}` }
+                withCredentials: true
             });
             return response.data.data as OrderDetail;
         } catch (error: any) {
@@ -142,12 +142,12 @@ export const fetchMyOrders = createAsyncThunk(
     'order/fetchMyOrders',
     async (statusFilter: string = 'all', { getState, rejectWithValue }) => {
         try {
-            const state = getState() as RootState;
-            const token = state.auth.userInfo?.token;
+            // const state = getState() as RootState;
+            // const token = state.auth.userInfo?.token;
 
             const params = statusFilter !== 'all' ? `?status=${statusFilter}` : '';
             const response = await axios.get(`${API_URL}${params}`, {
-                headers: { Authorization: `Bearer ${token}` }
+                withCredentials: true
             });
             return response.data.data as OrderDetail[];
         } catch (error: any) {
@@ -161,12 +161,12 @@ export const fetchShopOrders = createAsyncThunk(
     'order/fetchShopOrders',
     async ({ shop_id, statusFilter = 'all' }: { shop_id: string; statusFilter?: string }, { getState, rejectWithValue }) => {
         try {
-            const state = getState() as RootState;
-            const token = state.auth.userInfo?.token;
+            // const state = getState() as RootState;
+            // const token = state.auth.userInfo?.token;
             const params = statusFilter !== 'all' ? `?status=${statusFilter}` : '';
 
             const response = await axios.get(`${API_URL}/shop/${shop_id}${params}`, {
-                headers: { Authorization: `Bearer ${token}` }
+                withCredentials: true
             });
             return response.data.data as OrderDetail[];
         } catch (error: any) {
@@ -180,11 +180,11 @@ export const updateOrderStatus = createAsyncThunk(
     'order/updateStatus',
     async ({ order_id, status }: { order_id: string; status: string }, { getState, rejectWithValue }) => {
         try {
-            const state = getState() as RootState;
-            const token = state.auth.userInfo?.token;
+            // const state = getState() as RootState;
+            // const token = state.auth.userInfo?.token;
 
             const response = await axios.patch(`${API_URL}/status/${order_id}`, { status }, {
-                headers: { Authorization: `Bearer ${token}` }
+                withCredentials: true
             });
             return { order_id, status, data: response.data.data };
         } catch (error: any) {
