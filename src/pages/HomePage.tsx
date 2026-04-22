@@ -20,11 +20,9 @@ import formatPrice from "../utils/FormatPrice";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 
-import { useEffect } from "react";
 import { useAppDispatch } from "../hooks/useAppDispatch";
 import { useAppSelector } from "../hooks/useAppSelector";
 import { fetchWishlist, toggleWishlist } from "../store/wishlistSlice";
-import FavoriteIcon from "@mui/icons-material/Favorite";
 import type { Product } from "../type";
 
 export default function Homepage() {
@@ -35,18 +33,6 @@ export default function Homepage() {
     const [products, setProducts] = useState<Product[]>([]);
 
     const navigate = useNavigate();
-
-    const dispatch = useAppDispatch();
-    const { wishlistedIds } = useAppSelector(state => state.wishlist);
-
-    useEffect(() => {
-        dispatch(fetchWishlist());
-    }, [dispatch]);
-
-    const handleToggleWishlist = (e: React.MouseEvent, product_id: string) => {
-        e.stopPropagation();
-        dispatch(toggleWishlist(product_id));
-    };
 
     const dispatch = useAppDispatch();
     const { wishlistedIds } = useAppSelector(state => state.wishlist);
@@ -79,51 +65,6 @@ export default function Homepage() {
     useEffect(() => {
         fetchProducts();
     }, []);
-
-    // const dummy = [
-    //     {
-    //         id: 1,
-    //         name: "Handphone",
-    //         price: 100,
-    //         rating: 4.5,
-    //     },
-    //     {
-    //         name: "Headset",
-    //         price: 80,
-    //         rating: 4.6,
-    //     },
-    //     {
-    //         name: "Keyboard",
-    //         price: 60,
-    //         rating: 3.2,
-    //     },
-    //     {
-    //         name: "iPhone 17 Pro Max",
-    //         price: 1000,
-    //         rating: 5,
-    //     },
-    //     {
-    //         name: "Handphone",
-    //         price: 100,
-    //         rating: 2.8,
-    //     },
-    //     {
-    //         name: "Headset",
-    //         price: 80,
-    //         rating: 1.5,
-    //     },
-    //     {
-    //         name: "Keyboard",
-    //         price: 60,
-    //         rating: 4.2,
-    //     },
-    //     {
-    //         name: "iPhone 17 Pro Max",
-    //         price: 1000,
-    //         rating: 5,
-    //     },
-    // ];
-
 
     const getAverageRating = (ratings?: { value: number }[]) => {
       if (!ratings || ratings.length === 0) return 0;
@@ -527,6 +468,7 @@ export default function Homepage() {
                           >
                               <IconButton
                                   onClick={(e) => {
+                                      handleToggleWishlist(e, product.product_id);
                                       e.stopPropagation();
                                   }}
                                   sx={{
@@ -538,6 +480,12 @@ export default function Homepage() {
                                       width: 30,
                                       height: 30,
                                       boxShadow: "0 2px 6px rgba(0, 0, 0, 0.35)",
+                                      color: wishlistedIds.includes(product.product_id)
+                                          ? "rgba(255, 0, 0, 0.79)"
+                                          : "#ccc",
+                                      "&:hover": {
+                                          backgroundColor: "white",
+                                      },
                                   }}
                               >
                                   ❤
