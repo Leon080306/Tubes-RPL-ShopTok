@@ -25,6 +25,7 @@ export default function Wishlist() {
 
     const navigate = useNavigate();
 
+    //todo: nath (wishlist)
     const dummy = [
         {
             id: 1,

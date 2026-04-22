@@ -37,7 +37,7 @@ const CartPage = lazy(() => import("../pages/CartPage"));
 
 const ShopProfile = lazy(() => import("../pages/Shop/ShopProfile"))
 
-const ShopDashboard = lazy(() => import("../pages/Shop/SellerDashboard"));
+const ShopDashboard = lazy(() => import("../pages/Shop/ShopDashboard"));
 const OrderDetailPage = lazy(() => import("../pages/orders/OrderDetailPage"));
 
 const UserManagementPage = lazy(() => import("../pages/admin/UserManagementPage"))
@@ -83,8 +83,6 @@ export const AppRoutes = () => {
       </Route>
 
       <Route path="/shop/dashboard" element={<ShopDashboard />} />
-
-
     </Routes>
   );
 };
