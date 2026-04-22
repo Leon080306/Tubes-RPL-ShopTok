@@ -60,7 +60,7 @@ export type Rating = {
 }
 
 export type UserInfo = {
-    user_id: string
+    token?: string;
     first_name: string
     last_name: string
     email: string
@@ -92,8 +92,8 @@ export type OrderStats = {
 
 // ni buat setting addressnya
 export type Address = {
-    address_id: number
-    user_id: number
+    address_id: string
+    user_id: string
     full_name: string
     address: string
     province: string
@@ -152,6 +152,74 @@ export type ShopInfo = {
     products?: Product // ntr diganti pake type  Product. blom ada soalnya
     createdAt?: string
     updatedAt?: string
+}
+
+export type CartItem = {
+    user_id: string;
+    variant_id: string;
+    quantity: number;
+    is_selected: boolean;
+    variant: {
+        variant_id: string;
+        name: string;
+        price: string; 
+        picture: string;
+        product: {
+            name: string;
+            shop: {
+                name: string;
+            }
+        }
+    }
+}
+
+export type OrderItem = {
+    order_id: string;
+    variant_id: string;
+    quantity: number;
+}
+
+export type Order = {
+    order_id: string;
+    customer_id: string;
+    shop_id: string;
+    address_id: string;
+    status: "pending" | "completed" | "cancelled";
+    amount_paid: number;
+    orderItems?: OrderItem[];
+    createdAt?: string;
+    updatedAt?: string;
+}
+
+export type OrderDetail = {
+    order_id: string
+    customer_id: string
+    shop_id: string
+    address_id: string
+    status: "pending" | "completed" | "cancelled"
+    amount_paid: number
+    createdAt: string
+    updatedAt: string
+    address: Address
+    shop: {                  
+        shop_id: string
+        name: string
+        profile_pic?: string
+    }
+    orderItems: {
+        order_id: string
+        variant_id: string
+        quantity: number
+        variant: {
+            variant_id: string
+            name: string
+            price: string
+            picture: string
+            product: {
+                name: string
+            }
+        }
+    }[]
 }
 
 export type AsyncDataState = 'idle' | 'loading' | 'fulfilled' | 'error'

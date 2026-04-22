@@ -19,6 +19,12 @@ import banner2 from "../assets/stock-images/home-bannerHandphone.jpg";
 import formatPrice from "../utils/FormatPrice";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
+
+import { useEffect } from "react";
+import { useAppDispatch } from "../hooks/useAppDispatch";
+import { useAppSelector } from "../hooks/useAppSelector";
+import { fetchWishlist, toggleWishlist } from "../store/wishlistSlice";
+import FavoriteIcon from "@mui/icons-material/Favorite";
 import type { Product } from "../type";
 
 export default function Homepage() {
@@ -29,6 +35,30 @@ export default function Homepage() {
     const [products, setProducts] = useState<Product[]>([]);
 
     const navigate = useNavigate();
+
+    const dispatch = useAppDispatch();
+    const { wishlistedIds } = useAppSelector(state => state.wishlist);
+
+    useEffect(() => {
+        dispatch(fetchWishlist());
+    }, [dispatch]);
+
+    const handleToggleWishlist = (e: React.MouseEvent, product_id: string) => {
+        e.stopPropagation();
+        dispatch(toggleWishlist(product_id));
+    };
+
+    const dispatch = useAppDispatch();
+    const { wishlistedIds } = useAppSelector(state => state.wishlist);
+
+    useEffect(() => {
+        dispatch(fetchWishlist());
+    }, [dispatch]);
+
+    const handleToggleWishlist = (e: React.MouseEvent, product_id: string) => {
+        e.stopPropagation();
+        dispatch(toggleWishlist(product_id));
+    };
 
     const fetchProducts = async () => {
         try {
