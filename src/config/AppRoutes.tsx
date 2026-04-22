@@ -29,6 +29,7 @@ const SettingKeamanan = lazy(() => import("../pages/Account/SettingKeamanan"));
 
 const Wishlist = lazy(() => import("../pages/Account/Wishlist"));
 
+const ProductsPage = lazy(() => import("../pages/products/ProductsPage"));
 const ProductPage = lazy(() => import("../pages/products/ProductPage"));
 
 const OrderHistoryPage = lazy(() => import("../pages/orders/OrderHistoryPage"));
@@ -71,6 +72,7 @@ export const AppRoutes = () => {
 
         <Route path="/chattoko" element={<ChatToko />} />
 
+        <Route path="/products" element={<ProductsPage />} />
         <Route path="/product/:id" element={<ProductPage />} />
 
         <Route path="/orders" element={<OrderHistoryPage />} />

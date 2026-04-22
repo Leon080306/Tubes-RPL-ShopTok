@@ -3,6 +3,7 @@ import {
   AppBar,
   Box,
   Button,
+  CircularProgress,
   InputAdornment,
   Paper,
   Rating,
@@ -24,55 +25,46 @@ import { useAppSelector } from "../hooks/useAppSelector";
 // import { useAppDispatch } from "../hooks/useAppDispatch";
 // import { authActions } from "../store/authSlice";
 import { useNavigate } from "react-router";
+import type { Category } from "../type";
 // import { Avatar, Menu, MenuItem } from "@mui/material";
 
 export function Layout() {
   const [searchFocused, setSearchFocused] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("Categories");
   const [search, setSearch] = useState("");
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loadingCategories, setLoadingCategories] = useState(false);
 
   // const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const { userInfo } = useAppSelector((state) => state.auth);
 
-  useEffect(() => { }, [search]);
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        setLoadingCategories(true);
+
+        const res = await fetch("/api/category", {
+          method: "GET",
+          credentials: "include",
+        });
+
+        const data = await res.json();
+
+        setCategories(data.records || []);
+      } catch (error) {
+        console.error("Failed to fetch categories:", error);
+      } finally {
+        setLoadingCategories(false);
+      }
+    };
+
+    fetchCategories();
+  }, []);
 
   const handleProfileNavigation = () => {
     navigate("/profile")
   };
-
-  const categories = [
-    {
-      name: "All Products",
-    },
-    {
-      name: "Electronics",
-    },
-    {
-      name: "Computers & Laptops",
-    },
-    {
-      name: "Phones & Tablets",
-    },
-    {
-      name: "Accessories",
-    },
-    {
-      name: "Home & Living",
-    },
-    {
-      name: "Fashion",
-    },
-    {
-      name: "Books",
-    },
-    {
-      name: "Sports",
-    },
-    {
-      name: "Health & Beauty",
-    },
-  ];
 
   const products = [
     {
@@ -107,11 +99,14 @@ export function Layout() {
     },
   ];
 
-  const handleCategorySelect = (category: string) => {
-    setSelectedCategory(category);
-  };
+  const handleCategorySelect = (categoryName: string) => {
+    const selected = categories.find((c) => c.name === categoryName);
 
-  console.log("ISI USER INFO:", userInfo);
+    if (!selected) return;
+
+    setSelectedCategory(selected.name);
+    navigate(`/products?category=${selected.name}`);
+  };
 
   return (
     <Stack>
@@ -186,10 +181,10 @@ export function Layout() {
                 <Link className="nav-link" to="/">
                   Home
                 </Link>
-                <Link className="nav-link" to="/">
+                <Link className="nav-link" to="/products">
                   Products
                 </Link>
-                <Link className="nav-link" to="/">
+                <Link className="nav-link" to="/orders">
                   Orders
                 </Link>
               </Box>
@@ -224,7 +219,16 @@ export function Layout() {
                   setSearchFocused(true);
                 }}
                 onBlur={() => {
-                  setSearchFocused(false);
+                  // NEVER close immediately - wait 300ms
+                  setTimeout(() => {
+                    setSearchFocused(false);
+                  }, 150);
+                }}
+                onKeyDown={(e) => {                                          // ← add this
+                  if (e.key === "Enter" && search.trim()) {
+                    setSearchFocused(false);
+                    navigate(`/products?search=${encodeURIComponent(search.trim())}`);
+                  }
                 }}
                 InputProps={{
                   endAdornment: (
@@ -313,63 +317,75 @@ export function Layout() {
                               gap: 2,
                             }}
                           >
-                            {categories.map((category) => (
-                              <Paper
-                                key={category.name}
-                                elevation={0}
-                                onClick={() => { }}
-                                sx={{
-                                  display: "flex",
-                                  gap: "18px",
-                                  alignItems: "center",
-                                  backgroundColor: "#f6f6f6",
-                                  borderRadius: "12px",
-                                  padding: "12px",
-                                  transition: "all 0.25s ease",
-                                  cursor: "pointer",
-                                  "&:hover": {
-                                    transform: "scale(1.02)",
-                                    boxShadow: 5,
-                                  },
-                                }}
-                              >
-                                <img
-                                  src={AppLogoOnly}
-                                  style={{
-                                    width: "60px",
-                                    height: "60px",
-                                    borderRadius: "6px",
+                            {loadingCategories ? (
+                              <CircularProgress />
+                            ) : (
+                              categories.map((category) => (
+                                <Paper
+                                  key={category.name}
+                                  elevation={0}
+                                  onClick={() => {
+                                    // Navigate FIRST
+                                    handleCategorySelect(category.name ?? "");
+
+                                    // Force close AFTER navigation starts
+                                    setTimeout(() => {
+                                      setSearchFocused(false);
+                                    }, 100);
                                   }}
-                                  alt=""
-                                />
-                                <Box
                                   sx={{
                                     display: "flex",
-                                    flexDirection: "column",
-                                    justifyContent: "space-between",
-                                    height: "50px",
-                                    flexGrow: 1,
+                                    gap: "18px",
+                                    alignItems: "center",
+                                    backgroundColor: "#f6f6f6",
+                                    borderRadius: "12px",
+                                    padding: "12px",
+                                    transition: "all 0.25s ease",
+                                    cursor: "pointer",
+                                    "&:hover": {
+                                      transform: "scale(1.02)",
+                                      boxShadow: 5,
+                                    },
                                   }}
                                 >
-                                  <Typography
-                                    variant="subtitle1"
-                                    sx={{ fontWeight: 600, lineHeight: 1.2 }}
-                                  >
-                                    {category.name}
-                                  </Typography>
-
-                                  <Typography
-                                    variant="body2"
+                                  <img
+                                    src={AppLogoOnly}
+                                    style={{
+                                      width: "60px",
+                                      height: "60px",
+                                      borderRadius: "6px",
+                                    }}
+                                    alt=""
+                                  />
+                                  <Box
                                     sx={{
-                                      color: "text.secondary",
-                                      lineHeight: 1.2,
+                                      display: "flex",
+                                      flexDirection: "column",
+                                      justifyContent: "space-between",
+                                      height: "50px",
+                                      flexGrow: 1,
                                     }}
                                   >
-                                    12 products available
-                                  </Typography>
-                                </Box>
-                              </Paper>
-                            ))}
+                                    <Typography
+                                      variant="subtitle1"
+                                      sx={{ fontWeight: 600, lineHeight: 1.2 }}
+                                    >
+                                      {category.name}
+                                    </Typography>
+
+                                    <Typography
+                                      variant="body2"
+                                      sx={{
+                                        color: "text.secondary",
+                                        lineHeight: 1.2,
+                                      }}
+                                    >
+                                      {category.totalProducts} products available
+                                    </Typography>
+                                  </Box>
+                                </Paper>
+                              ))
+                            )}
                           </Box>
                         </>
                       ) : (
@@ -522,7 +538,5 @@ export function Layout() {
       </Box>
     </Stack>
   );
-
-  console.log(userInfo)
 
 }

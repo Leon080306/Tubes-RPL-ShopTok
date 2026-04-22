@@ -5,10 +5,6 @@ export type BasicMenuProps = {
     onSelect?: (value: string) => void;
 }
 
-export type Category = {
-    name: string;
-}
-
 export type UserInfo = {
     user_id: string
     first_name: string
@@ -118,5 +114,13 @@ export type ShopInfo = {
     createdAt?: string
     updatedAt?: string
 }
+
+export type Category = {
+    category_id: string;
+    name: string;
+    icon: string;
+    parent_id?: string | null;
+    totalProducts?: number
+};
 
 export type AsyncDataState = 'idle' | 'loading' | 'fulfilled' | 'error'
