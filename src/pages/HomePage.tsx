@@ -8,135 +8,184 @@ import {
     Rating,
     Select,
     Snackbar,
-    Tooltip,
     Typography,
 } from "@mui/material";
-import TuneIcon from "@mui/icons-material/Tune";
 import StarIcon from "@mui/icons-material/Star";
-import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
 import "swiper/swiper-bundle.css";
 import { Swiper, SwiperSlide } from "swiper/react";
-import { Scrollbar, Navigation, Pagination, Autoplay } from "swiper/modules";
+import { Navigation, Pagination, Autoplay } from "swiper/modules";
 import banner1 from "../assets/stock-images/home-bannerHeadset.jpg";
 import banner2 from "../assets/stock-images/home-bannerHandphone.jpg";
-import { useState } from "react";
+import formatPrice from "../utils/FormatPrice";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
+import type { Product } from "../type";
 
 export default function Homepage() {
     const [rating, setRating] = useState<number | null>(null);
     const [sortPrice, setSortPrice] = useState<"high" | "low" | "">("");
     const [sortRating, setSortRating] = useState<"high" | "low" | "">("");
 
+    const [products, setProducts] = useState<Product[]>([]);
+
     const navigate = useNavigate();
 
-    const dummy = [
-        {
-            id: 1,
-            name: "Handphone",
-            price: 100,
-            rating: 4.5,
-        },
-        {
-            name: "Headset",
-            price: 80,
-            rating: 4.6,
-        },
-        {
-            name: "Keyboard",
-            price: 60,
-            rating: 3.2,
-        },
-        {
-            name: "iPhone 17 Pro Max",
-            price: 1000,
-            rating: 5,
-        },
-        {
-            name: "Handphone",
-            price: 100,
-            rating: 2.8,
-        },
-        {
-            name: "Headset",
-            price: 80,
-            rating: 1.5,
-        },
-        {
-            name: "Keyboard",
-            price: 60,
-            rating: 4.2,
-        },
-        {
-            name: "iPhone 17 Pro Max",
-            price: 1000,
-            rating: 5,
-        },
-    ];
+    const fetchProducts = async () => {
+        try {
+            const response = await fetch("/api/products");
 
-    const recentProductsDummy = [
-        {
-            name: "Laptop sleeve MacBook",
-            price: 59,
-            image: banner1,
-        },
-        {
-            name: "AirPods Max",
-            price: 559,
-            image: banner1,
-        },
-        {
-            name: "iPad Mini",
-            price: 569,
-            image: banner1,
-        },
-        {
-            name: "Flower Laptop Sleeve",
-            price: 39,
-            image: banner1,
-        },
-        {
-            name: "Laptop sleeve MacBook",
-            price: 59,
-            image: banner1,
-        },
-        {
-            name: "AirPods Max",
-            price: 559,
-            image: banner1,
-        },
-        {
-            name: "iPad Mini",
-            price: 569,
-            image: banner1,
-        },
-        {
-            name: "Flower Laptop Sleeve",
-            price: 39,
-            image: banner1,
-        },
-    ];
+            if (response.status !== 200) {
+                alert("Failed to reload products");
+                throw new Error("Failed to reload products");
+            }
 
-    const filteredProducts = dummy
+            const data = await response.json();
+            setProducts(data.records);
+        } catch (error) {
+            console.error("Error fetching products:", error);
+        }
+    };
+
+    useEffect(() => {
+        fetchProducts();
+    }, []);
+
+    // const dummy = [
+    //     {
+    //         id: 1,
+    //         name: "Handphone",
+    //         price: 100,
+    //         rating: 4.5,
+    //     },
+    //     {
+    //         name: "Headset",
+    //         price: 80,
+    //         rating: 4.6,
+    //     },
+    //     {
+    //         name: "Keyboard",
+    //         price: 60,
+    //         rating: 3.2,
+    //     },
+    //     {
+    //         name: "iPhone 17 Pro Max",
+    //         price: 1000,
+    //         rating: 5,
+    //     },
+    //     {
+    //         name: "Handphone",
+    //         price: 100,
+    //         rating: 2.8,
+    //     },
+    //     {
+    //         name: "Headset",
+    //         price: 80,
+    //         rating: 1.5,
+    //     },
+    //     {
+    //         name: "Keyboard",
+    //         price: 60,
+    //         rating: 4.2,
+    //     },
+    //     {
+    //         name: "iPhone 17 Pro Max",
+    //         price: 1000,
+    //         rating: 5,
+    //     },
+    // ];
+
+
+    const getAverageRating = (ratings?: { value: number }[]) => {
+      if (!ratings || ratings.length === 0) return 0;
+
+      const total = ratings.reduce((sum, r) => sum + r.value, 0);
+      return total / ratings.length;
+    };
+
+    const getMinPrice = (variants?: { price: number }[]) => {
+      if (!variants || variants.length === 0) return 0;
+
+      return Math.min(...variants.map(v => Number(v.price)));
+    };
+
+    const filteredProducts = products
         .filter((item) => {
             if (!rating) return true;
+
+            const avg = getAverageRating(item.ratings);
 
             const upperBound = rating;
             const lowerBound = rating === 1 ? 0 : rating - 0.9;
 
-            return item.rating <= upperBound && item.rating >= lowerBound;
+            return avg >= lowerBound && avg <= upperBound;
         })
         // SORTING (MULTI CONDITION)
         .sort((a, b) => {
-            // PRIORITAS 1: PRICE
-            if (sortPrice === "high") return b.price - a.price;
-            if (sortPrice === "low") return a.price - b.price;
+          let result = 0;
 
-            // PRIORITAS 2: RATING MANUAL
-            if (sortRating === "high") return b.rating - a.rating;
-            if (sortRating === "low") return a.rating - b.rating;
+          if (sortPrice) {
+            result =
+              sortPrice === "high"
+                ? getMinPrice(b.variants) - getMinPrice(a.variants)
+                : getMinPrice(a.variants) - getMinPrice(b.variants);
+          }
 
-            return 0;
+          if (result === 0 && sortRating) {
+            result =
+              sortRating === "high"
+                ? getAverageRating(b.ratings) - getAverageRating(a.ratings)
+                : getAverageRating(a.ratings) - getAverageRating(b.ratings);
+          }
+
+          return result;
         });
+
+    const prices = products.map(p => getMinPrice(p.variants));
+    const maxPrice = prices.length ? Math.max(...prices) : 0;
+    const minPrice = prices.length ? Math.min(...prices) : 0;
+
+    const getRecommendationScore = (product: Product) => {
+        const rating = getAverageRating(product.ratings); // 0–5
+        const price = getMinPrice(product.variants);
+
+        const normalizedRating = rating / 5; // 0–1
+
+        const normalizedPrice =
+            (price - minPrice) / (maxPrice - minPrice || 1); // 0–1
+
+        const priceScore = 1 - normalizedPrice; // makin murah makin tinggi
+
+        const reviewCount = product.ratings?.length || 0;
+        const reviewScore = Math.min(reviewCount / 50, 1); // cap di 50 review
+
+        // WEIGHT (bisa kamu tweak)
+        return (
+            normalizedRating * 0.5 +
+            priceScore * 0.3 +
+            reviewScore * 0.2
+        );
+    };
+
+    // const recommendedProducts = [...filteredProducts]
+    //   .sort((a, b) => getRecommendationScore(b) - getRecommendationScore(a))
+    //   .slice(0, 8);
+
+    // const recommendedProducts = [...filteredProducts]
+    //   .sort((a, b) => {
+    //       const scoreA = getAverageRating(a.ratings) * 2;
+    //       const scoreB = getAverageRating(b.ratings) * 2;
+
+    //       return scoreB - scoreA;
+    //   })
+    //   .slice(0, 8);
+
+    const isFiltering = rating !== null || sortPrice || sortRating;
+
+    const finalProducts = isFiltering
+      ? filteredProducts
+      : [...products]
+          .sort((a, b) => getRecommendationScore(b) - getRecommendationScore(a))
+          // .slice(0, 8);
 
     return (
         <div style={{
@@ -301,8 +350,8 @@ export default function Homepage() {
                         <MenuItem value="" sx={{ opacity: 0.4 }}>
                             <em>All Price</em>
                         </MenuItem>
-                        <MenuItem value={"Highest"}>Highest Price</MenuItem>
-                        <MenuItem value={"Lowest"}>Lowest Price</MenuItem>
+                        <MenuItem value={"high"}>Highest Price</MenuItem>
+                        <MenuItem value={"low"}>Lowest Price</MenuItem>
                     </Select>
                 </FormControl>
 
@@ -312,8 +361,13 @@ export default function Homepage() {
                         value={rating ?? ""}
                         onChange={(e) => {
                             const value = e.target.value;
-                            setRating(value === 0 ? null : Number(value));
+                            if (typeof value === "string" && value === "") {
+                                setRating(null);
+                            } else {
+                                setRating(Number(value));
+                            }
                         }}
+
                         renderValue={(selected) => {
                             if (!selected) {
                                 return (
@@ -375,7 +429,7 @@ export default function Homepage() {
                     </Select>
                 </FormControl>
 
-                <Tooltip title="Apply Filter">
+                {/* <Tooltip title="Apply Filter">
                     <IconButton
                         sx={{
                             backgroundColor: "#1976d2",
@@ -390,7 +444,7 @@ export default function Homepage() {
                     >
                         <TuneIcon />
                     </IconButton>
-                </Tooltip>
+                </Tooltip> */}
                 <Snackbar></Snackbar>
             </Box>
 
@@ -406,156 +460,158 @@ export default function Homepage() {
                     marginTop: 5,
                 }}
             >
-                {filteredProducts.map((product, index) => (
-                    <Card
-                        key={index}
-                        // elevation={2}
-                        sx={{
-                            cursor: "pointer",
-                            borderRadius: 4,
-                            boxShadow: "0px 0px 20px rgba(0, 0, 0, 0.27)",
-                            p: 2,
-                            backgroundColor: "#ffffff",
-                            transition: "0.3s",
-                            "&:hover": {
-                                transform: "translateY(-6px)",
-                                boxShadow: "0 8px 24px rgba(0,0,0,0.08)",
-                            },
-                        }}
-                        onClick={() => navigate(`/product/${product.id}`)}
-                    >
-                        <Box
-                            sx={{
-                                position: "relative",
-                                backgroundColor: "#f3f3f3",
-                                borderRadius: 3,
-                                height: 200,
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                overflow: "hidden", // penting!
-                                mb: 2,
-                            }}
-                        >
-                            <IconButton
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    // masukkin fungsi like di sini
-                                }}
-                                sx={{
-                                    position: "absolute",
-                                    top: 8,
-                                    right: 8,
-                                    zIndex: 10,
-                                    backgroundColor: "white",
-                                    width: 30,
-                                    height: 30,
-                                    boxShadow: "0 2px 6px rgba(0, 0, 0, 0.35)",
-                                    "&:hover": {
-                                        color: "rgba(255, 0, 0, 0.79)",
-                                        backgroundColor: "white",
-                                        scale: 1.15,
-                                    },
-                                }}
-                            >
-                                ❤
-                            </IconButton>
+                {finalProducts.map((product) => {
+                  const avgRating = getAverageRating(product.ratings);
+                  const price = getMinPrice(product.variants);
+                  const image = product.variants?.[0]?.picture || banner1;
 
-                            <Box
-                                component="img"
-                                src={banner1}
-                                sx={{
-                                    width: "100%",
-                                    height: "100%",
-                                    objectFit: "contain",
-                                    padding: "16px",
-                                    transition: "transform 0.35s ease",
+                  return (
+                      <Card
+                          key={product.product_id}
+                          sx={{
+                              cursor: "pointer",
+                              borderRadius: 4,
+                              boxShadow: "0px 0px 20px rgba(0, 0, 0, 0.27)",
+                              p: 2,
+                              backgroundColor: "#ffffff",
+                              transition: "0.3s",
+                              "&:hover": {
+                                  transform: "translateY(-6px)",
+                                  boxShadow: "0 8px 24px rgba(0,0,0,0.08)",
+                              },
+                          }}
+                          onClick={() => navigate(`/product/${product.product_id}`)}
+                      >
+                          <Box
+                              sx={{
+                                  position: "relative",
+                                  backgroundColor: "#f3f3f3",
+                                  borderRadius: 3,
+                                  height: 200,
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  overflow: "hidden",
+                                  mb: 2,
+                              }}
+                          >
+                              <IconButton
+                                  onClick={(e) => {
+                                      e.stopPropagation();
+                                  }}
+                                  sx={{
+                                      position: "absolute",
+                                      top: 8,
+                                      right: 8,
+                                      zIndex: 10,
+                                      backgroundColor: "white",
+                                      width: 30,
+                                      height: 30,
+                                      boxShadow: "0 2px 6px rgba(0, 0, 0, 0.35)",
+                                  }}
+                              >
+                                  ❤
+                              </IconButton>
 
-                                    ".MuiCard-root:hover &": {
-                                        transform: "scale(1.08)",
-                                    },
-                                }}
-                            />
-                        </Box>
+                              <Box
+                                  component="img"
+                                  src={image}
+                                  sx={{
+                                      width: "100%",
+                                      height: "100%",
+                                      objectFit: "contain",
+                                      padding: "16px",
+                                      transition: "transform 0.35s ease",
+                                      ".MuiCard-root:hover &": {
+                                          transform: "scale(1.08)",
+                                      },
+                                  }}
+                              />
+                          </Box>
 
-                        <Box
-                            sx={{
-                                display: "flex",
-                                justifyContent: "space-between",
-                            }}
-                        >
-                            <Typography
-                                variant="subtitle1"
-                                sx={{ fontWeight: 600 }}
-                            >
-                                {product.name}
-                            </Typography>
+                          <Box>
+                              <Typography
+                                  variant="subtitle1"
+                                  sx={{
+                                      fontWeight: 500,
+                                      lineHeight: 1.2,
+                                      fontSize: 15,
 
-                            <Typography
-                                variant="subtitle1"
-                                sx={{ fontWeight: 700 }}
-                            >
-                                ${product.price}.00
-                            </Typography>
-                        </Box>
+                                      whiteSpace: "nowrap",
+                                      overflow: "hidden",
+                                      textOverflow: "ellipsis",
+                                  }}
+                                  title={product.name}
+                              >
+                                  {product.name}
+                              </Typography>
 
-                        <Typography
-                            variant="body2"
-                            sx={{ color: "#757575", mt: 0.5 }}
-                        >
-                            High quality wireless audio
-                        </Typography>
+                              <Typography
+                                  variant="subtitle1"
+                                  sx={{
+                                      fontWeight: 700,
+                                      mt: 0.5,
+                                  }}
+                              >
+                                  {formatPrice(price)}
+                              </Typography>
+                          </Box>
 
-                        <Box
-                            sx={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: 1,
-                                mt: 1,
-                            }}
-                        >
-                            <Rating
-                                value={product.rating}
-                                precision={0.1}
-                                readOnly
-                                size="small"
-                                sx={{
-                                    color: "#16a34a",
-                                }}
-                            />
-                            <Typography
-                                variant="caption"
-                                sx={{ color: "#16a34a" }}
-                            >
-                                (121)
-                            </Typography>
-                        </Box>
+                          <Typography
+                              variant="body2"
+                              sx={{ color: "#757575", mt: 0.5 }}
+                          >
+                              {product.description}
+                          </Typography>
 
-                        <Box sx={{ mt: 2 }}>
-                            <Button
-                                fullWidth
-                                sx={{
-                                    border: "1px solid #0f5132",
-                                    borderRadius: "999px",
-                                    textTransform: "none",
-                                    fontSize: 13,
-                                    fontWeight: 600,
-                                    py: 0.8,
-                                    color: "#0f5132",
-                                    overflow: "hidden", // penting untuk ripple biar clipped
-                                    "&:hover": {
-                                        backgroundColor: "#0f5132",
-                                        color: "white",
-                                    },
-                                }}
-                            >
-                                Add to Cart
-                            </Button>
-                        </Box>
-                    </Card>
-                ))}
+                          <Box
+                              sx={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: 1,
+                                  mt: 1,
+                              }}
+                          >
+                              <Rating
+                                  value={avgRating}
+                                  precision={0.1}
+                                  readOnly
+                                  size="small"
+                                  sx={{ color: "#16a34a" }}
+                              />
+                              <Typography
+                                  variant="caption"
+                                  sx={{ color: "#16a34a" }}
+                              >
+                                  ({product.ratings?.length || 0})
+                              </Typography>
+                          </Box>
+
+                          <Box sx={{ mt: 2 }}>
+                              <Button
+                                  fullWidth
+                                  sx={{
+                                      border: "1px solid #0f5132",
+                                      borderRadius: "999px",
+                                      textTransform: "none",
+                                      fontSize: 13,
+                                      fontWeight: 600,
+                                      py: 0.8,
+                                      color: "#0f5132",
+                                      "&:hover": {
+                                          backgroundColor: "#0f5132",
+                                          color: "white",
+                                      },
+                                  }}
+                              >
+                                  Add to Cart
+                              </Button>
+                          </Box>
+                      </Card>
+                  );
+              })}
             </Box>
-            <Typography variant="h5" sx={{ mt: 8, mb: 2 }}>
+            {/* <Typography variant="h5" sx={{ mt: 8, mb: 2 }}>
                 <strong>Recently Viewed</strong>
             </Typography>
 
@@ -570,8 +626,8 @@ export default function Homepage() {
                 style={{
                     paddingBottom: "30px", // space buat scrollbar
                 }}
-            >
-                {recentProductsDummy.map((item, index) => (
+            > */}
+                {/* {recentProductsDummy.map((item, index) => (
                     <SwiperSlide key={index}>
                         <Card
                             sx={{
@@ -586,9 +642,9 @@ export default function Homepage() {
                                     boxShadow: "0 12px 32px rgba(0,0,0,0.12)",
                                 },
                             }}
-                        >
+                        > */}
                             {/* IMAGE CONTAINER */}
-                            <Box
+                            {/* <Box
                                 sx={{
                                     position: "relative",
                                     backgroundColor: "#f5f5f5",
@@ -599,9 +655,9 @@ export default function Homepage() {
                                     justifyContent: "center",
                                     mb: 2,
                                 }}
-                            >
+                            > */}
                                 {/* FAVORITE */}
-                                <IconButton
+                                {/* <IconButton
                                     sx={{
                                         position: "absolute",
                                         top: 8,
@@ -628,10 +684,10 @@ export default function Homepage() {
                                         },
                                     }}
                                 />
-                            </Box>
+                            </Box> */}
 
                             {/* TITLE + PRICE */}
-                            <Box
+                            {/* <Box
                                 sx={{
                                     display: "flex",
                                     justifyContent: "space-between",
@@ -644,18 +700,18 @@ export default function Homepage() {
                                 <Typography fontSize={14} fontWeight={700}>
                                     ${item.price}.00
                                 </Typography>
-                            </Box>
+                            </Box> */}
 
                             {/* DESCRIPTION */}
-                            <Typography
+                            {/* <Typography
                                 fontSize={12}
                                 sx={{ color: "#777", mb: 1 }}
                             >
                                 Organic Cotton, fairtrade certified
-                            </Typography>
+                            </Typography> */}
 
                             {/* RATING */}
-                            <Box
+                            {/* <Box
                                 sx={{
                                     display: "flex",
                                     alignItems: "center",
@@ -675,10 +731,10 @@ export default function Homepage() {
                                 >
                                     (121)
                                 </Typography>
-                            </Box>
+                            </Box> */}
 
                             {/* BUTTON */}
-                            <Box sx={{ mt: 2 }}>
+                            {/* <Box sx={{ mt: 2 }}>
                                 <Box
                                     sx={{
                                         border: "1px solid #0f5132",
@@ -701,9 +757,9 @@ export default function Homepage() {
                                 </Box>
                             </Box>
                         </Card>
-                    </SwiperSlide>
-                ))}
-            </Swiper>
+                    </SwiperSlide> */}
+                {/* ))}
+            </Swiper> */}
         </div>
     );
 }

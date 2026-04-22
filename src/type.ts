@@ -6,10 +6,61 @@ export type BasicMenuProps = {
 }
 
 export type Category = {
+    category_id: string;
     name: string;
 }
 
+export type Shop = {
+    shop_id: string
+    name: string
+}
+
+export type Product = {
+    product_id: string
+    shop_id: string
+    category_id: string
+    name: string
+    description: string
+    view_count: number
+    ratings?: Rating[]
+    variants?: ProductVariant[]
+    category?: Category
+    shop?: ShopInfo
+}
+
+export type ProductVariant = {
+    variant_id: string
+    product_id: string
+    name: string
+    picture: string
+    stock: number
+    price: number
+    orderItems?: OrderItems[]
+}
+
+export type OrderItems = {
+    order_id: string
+    variant_id: string
+    quantity: number
+}
+
+export type Rating = {
+    user_id: string
+    rating_id: string
+    product_id: string
+    value: number
+    title: string
+    description: string
+    picture?: string
+    createdAt: string
+    user?: {
+        first_name: string
+        last_name: string
+    }
+}
+
 export type UserInfo = {
+    user_id: string
     first_name: string
     last_name: string
     email: string
@@ -98,7 +149,7 @@ export type ShopInfo = {
     status: "active" | "suspended"
     
     owner?: UserInfo 
-    products?: any[] // ntr diganti pake type  Product. blom ada soalnya
+    products?: Product // ntr diganti pake type  Product. blom ada soalnya
     createdAt?: string
     updatedAt?: string
 }

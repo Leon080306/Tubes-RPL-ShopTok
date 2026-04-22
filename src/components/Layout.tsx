@@ -11,7 +11,7 @@ import {
   Toolbar,
   Typography,
 } from "@mui/material";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Link, Outlet } from "react-router";
 import AppLogoInline from "../assets/logos/AppLogo-inline.png";
 import AppLogoOnly from "../assets/logos/AppLogo-iconOnly.png";
@@ -26,16 +26,83 @@ import { useAppSelector } from "../hooks/useAppSelector";
 import { useNavigate } from "react-router";
 // import { Avatar, Menu, MenuItem } from "@mui/material";
 
+interface BackendVariant {
+  price?: number;
+}
+
+interface BackendRating {
+  value: number;
+}
+
+interface BackendProduct {
+  product_id: string;
+  name: string;
+  variants?: BackendVariant[];
+  ratings?: BackendRating[];
+}
+
+// Shape yang dipakai UI search result
+interface SearchProduct {
+  name: string;
+  rating: number;       // rata-rata
+  totalReviews: number;
+  price: number;        // min price dari variants (IDR asli)
+}
+
+// ─── Helper ───────────────────────────────────────────────────────────────────
+function adaptToSearchProduct(p: BackendProduct): SearchProduct {
+  const variants = p.variants ?? [];
+  const ratings = p.ratings ?? [];
+
+  const prices = variants.map((v) => v.price ?? 0).filter((x) => x > 0);
+  const minPrice = prices.length > 0 ? Math.min(...prices) : 0;
+
+  const avgRating =
+    ratings.length > 0
+      ? ratings.reduce((acc, r) => acc + r.value, 0) / ratings.length
+      : 0;
+
+  return {
+    name: p.name,
+    rating: avgRating,
+    totalReviews: ratings.length,
+    price: minPrice,
+  };
+}
+
 export function Layout() {
   const [searchFocused, setSearchFocused] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("Categories");
   const [search, setSearch] = useState("");
 
+  const [allProducts, setAllProducts] = useState<SearchProduct[]>([]);
+
   // const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const { userInfo } = useAppSelector((state) => state.auth);
 
-  useEffect(() => { }, [search]);
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const res = await fetch("/api/products");
+        if (!res.ok) return;
+        const data = await res.json();
+        const raw: BackendProduct[] = Array.isArray(data.records) ? data.records : [];
+        setAllProducts(raw.map(adaptToSearchProduct));
+      } catch (err) {
+        console.error("Failed to fetch products for search:", err);
+      }
+    };
+    fetchProducts();
+  }, []);
+
+    const searchResults = useMemo(() => {
+      const q = search.trim().toLowerCase();
+      if (!q) return [];
+      return allProducts
+        .filter((p) => p.name.toLowerCase().includes(q))
+        .slice(0, 5);
+    }, [search, allProducts]);
 
   const handleProfileNavigation = () => {
     navigate("/profile")
@@ -292,163 +359,93 @@ export function Layout() {
                       padding: "18px 12px",
                     }}
                   >
-                    {
-                      search.trim() === "" ? (
-                        <>
-                          <h2
-                            style={{
-                              fontSize: "18px",
-                              margin: "0",
-                              marginBottom: "16px",
-                              paddingBottom: "12px",
-                              borderBottom: "1px solid rgba(0, 0, 0, 0.2)",
-                            }}
-                          >
-                            Popular Categories
-                          </h2>
-                          <Box
-                            sx={{
-                              display: "grid",
-                              gridTemplateColumns: "repeat(2, 1fr)",
-                              gap: 2,
-                            }}
-                          >
-                            {categories.map((category) => (
-                              <Paper
-                                key={category.name}
-                                elevation={0}
-                                onClick={() => { }}
-                                sx={{
-                                  display: "flex",
-                                  gap: "18px",
-                                  alignItems: "center",
-                                  backgroundColor: "#f6f6f6",
-                                  borderRadius: "12px",
-                                  padding: "12px",
-                                  transition: "all 0.25s ease",
-                                  cursor: "pointer",
-                                  "&:hover": {
-                                    transform: "scale(1.02)",
-                                    boxShadow: 5,
-                                  },
-                                }}
-                              >
-                                <img
-                                  src={AppLogoOnly}
-                                  style={{
-                                    width: "60px",
-                                    height: "60px",
-                                    borderRadius: "6px",
-                                  }}
-                                  alt=""
-                                />
-                                <Box
-                                  sx={{
-                                    display: "flex",
-                                    flexDirection: "column",
-                                    justifyContent: "space-between",
-                                    height: "50px",
-                                    flexGrow: 1,
-                                  }}
-                                >
-                                  <Typography
-                                    variant="subtitle1"
-                                    sx={{ fontWeight: 600, lineHeight: 1.2 }}
-                                  >
-                                    {category.name}
-                                  </Typography>
-
-                                  <Typography
-                                    variant="body2"
-                                    sx={{
-                                      color: "text.secondary",
-                                      lineHeight: 1.2,
-                                    }}
-                                  >
-                                    12 products available
-                                  </Typography>
-                                </Box>
-                              </Paper>
-                            ))}
-                          </Box>
-                        </>
-                      ) : (
-                        <Box
-                          sx={{
-                            display: "flex",
-                            flexDirection: "column",
-                          }}
-                        >
-                          {products.map((product, index) => (
-                            <Box
+                    {search.trim() === "" ? (
+                      <>
+                        {/* Popular Categories — tidak berubah */}
+                        <h2 style={{ fontSize: "18px", margin: "0", marginBottom: "16px", paddingBottom: "12px", borderBottom: "1px solid rgba(0, 0, 0, 0.2)" }}>
+                          Popular Categories
+                        </h2>
+                        <Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 2 }}>
+                          {categories.map((category) => (
+                            <Paper
+                              key={category.name}
+                              elevation={0}
+                              onClick={() => {}}
                               sx={{
-                                display: "flex",
-                                flexDirection: "row",
-                                justifyContent: "space-between",
-                                alignItems: "center",
-                                padding: "18px 12px",
-                                borderTop:
-                                  index === 0
-                                    ? "none"
-                                    : "1px solid rgba(0, 0, 0, 0.2)",
+                                display: "flex", gap: "18px", alignItems: "center",
+                                backgroundColor: "#f6f6f6", borderRadius: "12px",
+                                padding: "12px", transition: "all 0.25s ease", cursor: "pointer",
+                                "&:hover": { transform: "scale(1.02)", boxShadow: 5 },
                               }}
                             >
-                              <Box
-                                sx={{
-                                  display: "flex",
-                                  justifyContent: "start",
-                                  alignItems: "center",
-                                  gap: "18px",
-                                }}
-                              >
-                                <img
-                                  src={AppLogoOnly}
-                                  style={{
-                                    width: "60px",
-                                    height: "60px",
-                                    borderRadius: "6px",
-                                  }}
-                                  alt=""
-                                />
-                                <Typography
-                                  sx={{
-                                    fontSize: "14px",
-                                  }}
-                                >
-                                  {product.name}
+                              <img src={AppLogoOnly} style={{ width: "60px", height: "60px", borderRadius: "6px" }} alt="" />
+                              <Box sx={{ display: "flex", flexDirection: "column", justifyContent: "space-between", height: "50px", flexGrow: 1 }}>
+                                <Typography variant="subtitle1" sx={{ fontWeight: 600, lineHeight: 1.2 }}>
+                                  {category.name}
+                                </Typography>
+                                <Typography variant="body2" sx={{ color: "text.secondary", lineHeight: 1.2 }}>
+                                  12 products available
                                 </Typography>
                               </Box>
-
-                              <Box
-                                sx={{
-                                  display: "flex",
-                                  alignItems: "center",
-                                  gap: "8px",
-                                }}
-                              >
-                                <Rating
-                                  name="read-only"
-                                  value={product.rating}
-                                  readOnly
-                                  sx={{
-                                    color: "#003f29",
-                                  }}
-                                />
-                                <Typography>
-                                  ({product.totalReviews})
-                                </Typography>
-                              </Box>
-
-                              <Typography>
-                                Rp. {product.price.toLocaleString("de-DE")}
-                              </Typography>
-                            </Box>
+                            </Paper>
                           ))}
                         </Box>
-                      )
+                      </>
+                    ) : searchResults.length === 0 ? (
+                      // ── Tidak ada hasil ──────────────────────────────────────────────────────
+                      <Box sx={{ py: 3, textAlign: "center" }}>
+                        <Typography sx={{ fontSize: "14px", color: "text.secondary" }}>
+                          No products found for "<strong>{search}</strong>"
+                        </Typography>
+                      </Box>
+                    ) : (
+                      // ── Hasil search dari backend ────────────────────────────────────────────
+                      <Box sx={{ display: "flex", flexDirection: "column" }}>
+                        {searchResults.map((product, index) => (
+                          <Box
+                            key={`${product.name}-${index}`}
+                            sx={{
+                              display: "flex", flexDirection: "row",
+                              justifyContent: "space-between", alignItems: "center",
+                              padding: "18px 12px",
+                              borderTop: index === 0 ? "none" : "1px solid rgba(0, 0, 0, 0.2)",
+                              cursor: "pointer",
+                              "&:hover": { backgroundColor: "#f9f9f9" },
+                              borderRadius: index === 0 ? "8px 8px 0 0" : 0,
+                            }}
+                          >
+                            {/* Nama produk */}
+                            <Box sx={{ display: "flex", justifyContent: "start", alignItems: "center", gap: "18px" }}>
+                              <img
+                                src={AppLogoOnly}
+                                style={{ width: "60px", height: "60px", borderRadius: "6px" }}
+                                alt=""
+                              />
+                              <Typography sx={{ fontSize: "14px" }}>{product.name}</Typography>
+                            </Box>
 
-                      // <Typography variant="body1">Finding products...</Typography>
-                    }
+                            {/* Rating */}
+                            <Box sx={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                              <Rating
+                                name="read-only"
+                                value={product.rating}
+                                readOnly
+                                precision={0.5}           // ← tambah precision buat avg rating
+                                sx={{ color: "#003f29" }}
+                              />
+                              <Typography>({product.totalReviews})</Typography>
+                            </Box>
+
+                            {/* Harga */}
+                            <Typography>
+                              {product.price > 0
+                                ? `Rp. ${product.price.toLocaleString("de-DE")}`
+                                : "Harga tidak tersedia"}
+                            </Typography>
+                          </Box>
+                        ))}
+                      </Box>
+                    )}
                   </Paper>
                 </Box>
               )}

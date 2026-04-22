@@ -1,35 +1,17 @@
-/**
- * GreenMart — Products Page
- *
- * Drop-in replacement for the dashboard content area.
- * Uses the same theme/color tokens as SellerDashboard.tsx.
- *
- * Features:
- *  - Product table with search + category/status filters
- *  - View product drawer (read-only detail panel)
- *  - Add / Edit product dialog (shared form)
- *  - Delete confirmation dialog
- *  - Stock status badges + low-stock warning
- *
- * Usage (inside SellerDashboard, swap the content area):
- *   import ProductsPage from './ProductsPage';
- *   // render <ProductsPage /> instead of the dashboard grid
- */
+// ProductsList.tsx — backend integrated (GET only)
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import type { ReactNode, ChangeEvent } from "react";
 import {
     Box, Stack, Grid, Typography, Card, CardContent,
-    InputBase, IconButton, Chip, Button, Avatar,
+    InputBase, IconButton, Button, Avatar,
     Table, TableHead, TableBody, TableRow, TableCell,
-    Dialog, DialogTitle, DialogContent, DialogActions,
-    Drawer, Divider, TextField, Select, MenuItem,
-    FormControl, InputLabel, LinearProgress, Tooltip,
-    Pagination,
+    Drawer, 
+    FormControl, LinearProgress, Tooltip,
+    Pagination, Select, MenuItem, CircularProgress, Alert,
 } from "@mui/material";
-import type { SelectChangeEvent, SxProps, Theme } from "@mui/material";
+import type { SelectChangeEvent } from "@mui/material";
 import SearchRoundedIcon from "@mui/icons-material/SearchRounded";
-import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import EditRoundedIcon from "@mui/icons-material/EditRounded";
 import DeleteRoundedIcon from "@mui/icons-material/DeleteRounded";
 import VisibilityRoundedIcon from "@mui/icons-material/VisibilityRounded";
@@ -39,89 +21,116 @@ import InventoryRoundedIcon from "@mui/icons-material/InventoryRounded";
 import WarningAmberRoundedIcon from "@mui/icons-material/WarningAmberRounded";
 import TrendingUpRoundedIcon from "@mui/icons-material/TrendingUpRounded";
 import CheckCircleRoundedIcon from "@mui/icons-material/CheckCircleRounded";
+import AddRoundedIcon from "@mui/icons-material/AddRounded";
 
-// ─── Brand tokens (must match SellerDashboard.tsx) ────────────────────────────
+// ─── Brand tokens ─────────────────────────────────────────────────────────────
 const PRIMARY = "#003f29" as const;
 const BG = "#f0f3f7" as const;
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-type ProductStatus = "Active" | "Draft" | "Out of Stock";
-type ProductCategory =
-    | "Footwear"
-    | "Accessories"
-    | "Electronics"
-    | "Beauty"
-    | "Clothing"
-    | "Home & Living";
-
-interface Product {
-    id: string;
-    name: string;
-    category: ProductCategory;
-    price: number;         // in thousands IDR (e.g. 420 = Rp 420.000)
-    stock: number;
-    sold: number;
-    status: ProductStatus;
-    emoji: string;
-    sku: string;
-    description: string;
-    weight: number;        // grams
+// ─── Backend types ────────────────────────────────────────────────────────────
+interface Rating {
+    value: number;
 }
 
-type FormDraft = Omit<Product, "id" | "sold">;
+interface ProductVariant {
+    variant_id?: string;
+    product_id?: string;
+    name?: string;
+    picture?: string;
+    stock?: number;
+    price?: number;
+}
 
-// ─── Seed data ────────────────────────────────────────────────────────────────
-const SEED_PRODUCTS: Product[] = [
-    { id: "P001", emoji: "👟", name: "Sneakers Pro Max", sku: "FW-001", category: "Footwear", price: 420, stock: 84, sold: 312, status: "Active", description: "Premium running sneakers with ultra-cushion sole.", weight: 620 },
-    { id: "P002", emoji: "👜", name: "Canvas Tote Bag", sku: "AC-019", category: "Accessories", price: 89, stock: 210, sold: 241, status: "Active", description: "Eco-friendly canvas tote, reinforced handles.", weight: 280 },
-    { id: "P003", emoji: "🎧", name: "Wireless Earbuds X3", sku: "EL-042", category: "Electronics", price: 349, stock: 17, sold: 89, status: "Active", description: "True wireless earbuds, 30h battery, ANC.", weight: 55 },
-    { id: "P004", emoji: "🧴", name: "Skincare Starter Kit", sku: "BE-007", category: "Beauty", price: 185, stock: 53, sold: 180, status: "Active", description: "3-step morning routine: cleanser, toner, moisturiser.", weight: 420 },
-    { id: "P005", emoji: "👕", name: "Essential Cotton Tee", sku: "CL-033", category: "Clothing", price: 65, stock: 0, sold: 408, status: "Out of Stock", description: "100% cotton heavyweight tee, unisex fit.", weight: 180 },
-    { id: "P006", emoji: "🕯️", name: "Soy Wax Candle Set", sku: "HL-011", category: "Home & Living", price: 120, stock: 6, sold: 67, status: "Active", description: "Set of 3 hand-poured soy candles, vanilla & amber.", weight: 750 },
-    { id: "P007", emoji: "🎒", name: "Commuter Backpack", sku: "AC-024", category: "Accessories", price: 310, stock: 38, sold: 155, status: "Active", description: "15\" laptop compartment, waterproof 30L.", weight: 900 },
-    { id: "P008", emoji: "💄", name: "Matte Lip Collection", sku: "BE-021", category: "Beauty", price: 95, stock: 142, sold: 230, status: "Active", description: "6-shade matte liquid lipstick set, long-wearing.", weight: 90 },
-    { id: "P009", emoji: "📱", name: "Phone Stand Adjustable", sku: "EL-067", category: "Electronics", price: 45, stock: 3, sold: 312, status: "Active", description: "Aluminium foldable phone & tablet stand.", weight: 110 },
-    { id: "P010", emoji: "🧢", name: "Structured Cap", sku: "CL-055", category: "Clothing", price: 75, stock: 90, sold: 189, status: "Draft", description: "6-panel structured cap, embroidered logo.", weight: 130 },
-    { id: "P011", emoji: "🪴", name: "Ceramic Plant Pot S/3", sku: "HL-028", category: "Home & Living", price: 145, stock: 22, sold: 44, status: "Active", description: "Set of 3 glazed ceramic pots with drainage holes.", weight: 1100 },
-    { id: "P012", emoji: "⌚", name: "Minimalist Watch", sku: "AC-031", category: "Accessories", price: 550, stock: 0, sold: 76, status: "Out of Stock", description: "Japanese movement, sapphire glass, mesh strap.", weight: 95 },
-];
+interface Category {
+    category_id: string;
+    name: string;
+    icon?: string;
+    parent?: Category;
+}
 
-const CATEGORIES: ProductCategory[] = [
-    "Footwear", "Accessories", "Electronics", "Beauty", "Clothing", "Home & Living",
-];
+interface BackendProduct {
+    product_id: string;
+    shop_id: string;
+    category_id: string;
+    name: string;
+    description: string;
+    view_count: number;
+    ratings?: Rating[];
+    variants?: ProductVariant[];
+    category?: Category;
+}
 
-const ALL_STATUSES: ProductStatus[] = ["Active", "Draft", "Out of Stock"];
+// ─── UI-normalized product ────────────────────────────────────────────────────
+// Adapter layer: backend → apa yang dibutuhkan UI
+interface UIProduct {
+    id: string;                 // product_id
+    name: string;
+    description: string;
+    category: string;           // category.name atau category.parent.name
+    price: number;              // min price dari variants (dalam ribuan IDR)
+    stock: number;              // total stock dari semua variants
+    sold: number;               // placeholder — backend belum expose ini
+    avgRating: number;          // rata-rata ratings
+    ratingCount: number;
+    picture: string | null;     // picture dari variant pertama
+    viewCount: number;
+    raw: BackendProduct;        // simpan raw untuk detail drawer
+}
 
-const EMPTY_FORM: FormDraft = {
-    emoji: "📦",
-    name: "",
-    sku: "",
-    category: "Footwear",
-    price: 0,
-    stock: 0,
-    status: "Active",
-    description: "",
-    weight: 0,
-};
+// ─── Adapter function ─────────────────────────────────────────────────────────
+function adaptProduct(p: BackendProduct): UIProduct {
+    const variants = p.variants ?? [];
+    const ratings = p.ratings ?? [];
+
+    const prices = variants.map((v) => v.price ?? 0).filter((x) => x > 0);
+    const minPrice = prices.length > 0 ? Math.min(...prices) : 0;
+
+    const totalStock = variants.reduce((acc, v) => acc + (v.stock ?? 0), 0);
+
+    const avgRating =
+        ratings.length > 0
+            ? ratings.reduce((acc, r) => acc + r.value, 0) / ratings.length
+            : 0;
+
+    // Ambil nama kategori: prefer parent (level atas) kalau ada
+    const categoryName =
+        p.category?.name ?? p.category?.parent?.name ?? "Uncategorized";
+
+    const firstPic = variants.find((v) => v.picture)?.picture ?? null;
+
+    return {
+        id: p.product_id,
+        name: p.name,
+        description: p.description,
+        category: categoryName,
+        price: minPrice,           // sudah dalam satuan asli (IDR)
+        stock: totalStock,
+        sold: 0,                   // backend belum expose
+        avgRating,
+        ratingCount: ratings.length,
+        picture: firstPic,
+        viewCount: p.view_count,
+        raw: p,
+    };
+}
 
 // ─── Style helpers ────────────────────────────────────────────────────────────
-const STATUS_SX: Record<ProductStatus, SxProps<Theme>> = {
-    "Active": { bgcolor: "#dcfce7", color: "#15803d" },
-    "Draft": { bgcolor: "#f1f5f9", color: "#475569" },
-    "Out of Stock": { bgcolor: "#fee2e2", color: "#b91c1c" },
-};
-
-const stockLevel = (stock: number): { label: string; color: string; barColor: string } => {
+const stockLevel = (stock: number) => {
     if (stock === 0) return { label: "Empty", color: "#b91c1c", barColor: "#ef4444" };
     if (stock <= 10) return { label: "Low", color: "#854d0e", barColor: "#f59e0b" };
     if (stock <= 50) return { label: "Medium", color: "#1d4ed8", barColor: "#3b82f6" };
     return { label: "In Stock", color: "#15803d", barColor: PRIMARY };
 };
 
-const fmtPrice = (n: number) =>
-    `Rp ${n >= 1000 ? `${(n / 1000).toFixed(1)}Jt` : `${n}K`}`;
+// Harga dalam IDR asli (dari backend), format ke Rp
+const fmtPrice = (n: number) => {
+    if (n === 0) return "—";
+    if (n >= 1_000_000) return `Rp ${(n / 1_000_000).toFixed(1)}Jt`;
+    if (n >= 1_000) return `Rp ${(n / 1_000).toFixed(0)}K`;
+    return `Rp ${n}`;
+};
 
-// ─── Summary stats ─────────────────────────────────────────────────────────────
+// ─── Komponen kecil ───────────────────────────────────────────────────────────
 interface SummaryCardProps {
     icon: ReactNode;
     iconBg: string;
@@ -140,9 +149,17 @@ function SummaryCard({ icon, iconBg, iconColor, label, value, sub }: SummaryCard
                         <Typography sx={{ fontSize: 20, fontWeight: 700, color: "#0d1f13", lineHeight: 1 }}>
                             {value}
                         </Typography>
-                        {sub && <Typography sx={{ fontSize: 11, color: "#94a3b8", mt: 0.5 }}>{sub}</Typography>}
+                        {sub && (
+                            <Typography sx={{ fontSize: 11, color: "#94a3b8", mt: 0.5 }}>{sub}</Typography>
+                        )}
                     </Box>
-                    <Box sx={{ width: 38, height: 38, borderRadius: "9px", bgcolor: iconBg, color: iconColor, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <Box
+                        sx={{
+                            width: 38, height: 38, borderRadius: "9px",
+                            bgcolor: iconBg, color: iconColor,
+                            display: "flex", alignItems: "center", justifyContent: "center",
+                        }}
+                    >
                         {icon}
                     </Box>
                 </Stack>
@@ -151,192 +168,24 @@ function SummaryCard({ icon, iconBg, iconColor, label, value, sub }: SummaryCard
     );
 }
 
-// ─── Product Form Dialog ───────────────────────────────────────────────────────
-interface ProductFormDialogProps {
-    open: boolean;
-    mode: "add" | "edit";
-    draft: FormDraft;
-    onChange: (field: keyof FormDraft, value: string | number) => void;
-    onSubmit: () => void;
-    onClose: () => void;
-}
-
-function ProductFormDialog({ open, mode, draft, onChange, onSubmit, onClose }: ProductFormDialogProps) {
-    const title = mode === "add" ? "Add New Product" : "Edit Product";
-
-    return (
-        <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth
-            PaperProps={{ sx: { borderRadius: 3 } }}>
-            <DialogTitle sx={{ pb: 1 }}>
-                <Stack direction="row" justifyContent="space-between" alignItems="center">
-                    <Typography sx={{ fontSize: 16, fontWeight: 700, color: "#0d1f13" }}>{title}</Typography>
-                    <IconButton size="small" onClick={onClose}>
-                        <CloseRoundedIcon fontSize="small" />
-                    </IconButton>
-                </Stack>
-            </DialogTitle>
-
-            <Divider />
-
-            <DialogContent sx={{ pt: 2.5 }}>
-                <Grid container spacing={2}>
-                    <Grid size={12}>
-                        <TextField
-                            label="Product Name"
-                            fullWidth size="small"
-                            value={draft.name}
-                            onChange={(e) => onChange("name", e.target.value)}
-                        />
-                    </Grid>
-                    <Grid size={6}>
-                        <TextField
-                            label="SKU"
-                            fullWidth size="small"
-                            value={draft.sku}
-                            onChange={(e) => onChange("sku", e.target.value)}
-                        />
-                    </Grid>
-                    <Grid size={6}>
-                        <TextField
-                            label="Emoji / Icon"
-                            fullWidth size="small"
-                            value={draft.emoji}
-                            onChange={(e) => onChange("emoji", e.target.value)}
-                            inputProps={{ maxLength: 2 }}
-                        />
-                    </Grid>
-                    <Grid size={6}>
-                        <FormControl fullWidth size="small">
-                            <InputLabel>Category</InputLabel>
-                            <Select
-                                label="Category"
-                                value={draft.category}
-                                onChange={(e: SelectChangeEvent) =>
-                                    onChange("category", e.target.value as ProductCategory)
-                                }
-                            >
-                                {CATEGORIES.map((c) => <MenuItem key={c} value={c}>{c}</MenuItem>)}
-                            </Select>
-                        </FormControl>
-                    </Grid>
-                    <Grid size={6}>
-                        <FormControl fullWidth size="small">
-                            <InputLabel>Status</InputLabel>
-                            <Select
-                                label="Status"
-                                value={draft.status}
-                                onChange={(e: SelectChangeEvent) =>
-                                    onChange("status", e.target.value as ProductStatus)
-                                }
-                            >
-                                {ALL_STATUSES.map((s) => <MenuItem key={s} value={s}>{s}</MenuItem>)}
-                            </Select>
-                        </FormControl>
-                    </Grid>
-                    <Grid size={4}>
-                        <TextField
-                            label="Price (Rp K)"
-                            fullWidth size="small" type="number"
-                            value={draft.price}
-                            onChange={(e) => onChange("price", Number(e.target.value))}
-                            helperText="e.g. 420 = Rp 420K"
-                        />
-                    </Grid>
-                    <Grid size={4}>
-                        <TextField
-                            label="Stock (units)"
-                            fullWidth size="small" type="number"
-                            value={draft.stock}
-                            onChange={(e) => onChange("stock", Number(e.target.value))}
-                        />
-                    </Grid>
-                    <Grid size={4}>
-                        <TextField
-                            label="Weight (g)"
-                            fullWidth size="small" type="number"
-                            value={draft.weight}
-                            onChange={(e) => onChange("weight", Number(e.target.value))}
-                        />
-                    </Grid>
-                    <Grid size={12}>
-                        <TextField
-                            label="Description"
-                            fullWidth size="small" multiline rows={3}
-                            value={draft.description}
-                            onChange={(e) => onChange("description", e.target.value)}
-                        />
-                    </Grid>
-                </Grid>
-            </DialogContent>
-
-            <Divider />
-
-            <DialogActions sx={{ px: 3, py: 2, gap: 1 }}>
-                <Button onClick={onClose} variant="outlined" size="small"
-                    sx={{ borderColor: "#e2e8f0", color: "#64748b", "&:hover": { borderColor: "#cbd5e1", bgcolor: "#f8fafc" } }}>
-                    Cancel
-                </Button>
-                <Button onClick={onSubmit} variant="contained" size="small"
-                    sx={{ bgcolor: PRIMARY, "&:hover": { bgcolor: "#00502f" }, textTransform: "none", fontWeight: 600 }}>
-                    {mode === "add" ? "Add Product" : "Save Changes"}
-                </Button>
-            </DialogActions>
-        </Dialog>
-    );
-}
-
-// ─── Delete Confirm Dialog ────────────────────────────────────────────────────
-interface DeleteDialogProps {
-    open: boolean;
-    productName: string;
-    onConfirm: () => void;
-    onClose: () => void;
-}
-function DeleteDialog({ open, productName, onConfirm, onClose }: DeleteDialogProps) {
-    return (
-        <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth
-            PaperProps={{ sx: { borderRadius: 3 } }}>
-            <DialogTitle sx={{ pb: 1 }}>
-                <Stack direction="row" justifyContent="space-between" alignItems="center">
-                    <Typography sx={{ fontSize: 15, fontWeight: 700, color: "#0d1f13" }}>Delete Product</Typography>
-                    <IconButton size="small" onClick={onClose}><CloseRoundedIcon fontSize="small" /></IconButton>
-                </Stack>
-            </DialogTitle>
-            <DialogContent>
-                <Typography sx={{ fontSize: 13.5, color: "#334155" }}>
-                    Are you sure you want to delete{" "}
-                    <Box component="span" sx={{ fontWeight: 700 }}>{productName}</Box>?
-                    This action cannot be undone.
-                </Typography>
-            </DialogContent>
-            <DialogActions sx={{ px: 3, py: 2, gap: 1 }}>
-                <Button onClick={onClose} variant="outlined" size="small"
-                    sx={{ borderColor: "#e2e8f0", color: "#64748b", "&:hover": { borderColor: "#cbd5e1", bgcolor: "#f8fafc" } }}>
-                    Cancel
-                </Button>
-                <Button onClick={onConfirm} variant="contained" size="small"
-                    sx={{ bgcolor: "#ef4444", "&:hover": { bgcolor: "#dc2626" }, textTransform: "none", fontWeight: 600 }}>
-                    Delete
-                </Button>
-            </DialogActions>
-        </Dialog>
-    );
-}
-
 // ─── View Drawer ───────────────────────────────────────────────────────────────
 interface ViewDrawerProps {
-    product: Product | null;
+    product: UIProduct | null;
     onClose: () => void;
-    onEdit: (p: Product) => void;
+    onEdit: (p: UIProduct) => void;
 }
 function ViewDrawer({ product, onClose, onEdit }: ViewDrawerProps) {
     if (!product) return null;
     const sl = stockLevel(product.stock);
+    const variants = product.raw.variants ?? [];
 
     return (
-        <Drawer anchor="right" open={!!product} onClose={onClose}
-            PaperProps={{ sx: { width: 340, p: 0 } }}>
-
+        <Drawer
+            anchor="right"
+            open={!!product}
+            onClose={onClose}
+            PaperProps={{ sx: { width: 360, p: 0 } }}
+        >
             {/* Header */}
             <Box sx={{ px: 3, py: 2.5, borderBottom: "1px solid #e8ecf0" }}>
                 <Stack direction="row" justifyContent="space-between" alignItems="center">
@@ -350,29 +199,47 @@ function ViewDrawer({ product, onClose, onEdit }: ViewDrawerProps) {
             </Box>
 
             <Box sx={{ px: 3, py: 2.5, flex: 1, overflowY: "auto" }}>
-                {/* Product hero */}
-                <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", py: 2.5, bgcolor: BG, borderRadius: 3, mb: 2.5 }}>
-                    <Box sx={{ fontSize: 52, lineHeight: 1, mb: 1.5 }}>{product.emoji}</Box>
-                    <Typography sx={{ fontSize: 15, fontWeight: 700, color: "#0d1f13", textAlign: "center", px: 1 }}>
+                {/* Hero */}
+                <Box
+                    sx={{
+                        display: "flex", flexDirection: "column", alignItems: "center",
+                        py: 2.5, bgcolor: BG, borderRadius: 3, mb: 2.5,
+                    }}
+                >
+                    {product.picture ? (
+                        <Box
+                            component="img"
+                            src={product.picture}
+                            alt={product.name}
+                            sx={{ width: 72, height: 72, objectFit: "cover", borderRadius: 2, mb: 1.5 }}
+                        />
+                    ) : (
+                        <Box sx={{ fontSize: 52, lineHeight: 1, mb: 1.5 }}>📦</Box>
+                    )}
+                    <Typography
+                        sx={{ fontSize: 15, fontWeight: 700, color: "#0d1f13", textAlign: "center", px: 1 }}
+                    >
                         {product.name}
                     </Typography>
-                    <Typography sx={{ fontSize: 12, color: "#94a3b8", mt: 0.3 }}>{product.sku}</Typography>
-                    <Chip label={product.status} size="small"
-                        sx={{ mt: 1.25, height: 22, fontSize: 11.5, fontWeight: 600, borderRadius: "99px", ...STATUS_SX[product.status] }} />
+                    <Typography sx={{ fontSize: 12, color: "#94a3b8", mt: 0.3 }}>
+                        ID: {product.id}
+                    </Typography>
                 </Box>
 
-                {/* Price + stock */}
+                {/* Info grid */}
                 <Grid container spacing={1.5} mb={2.5}>
                     {[
-                        { label: "Price", value: fmtPrice(product.price) },
+                        { label: "Min Price", value: fmtPrice(product.price) },
                         { label: "Category", value: product.category },
-                        { label: "Total Sold", value: `${product.sold} units` },
-                        { label: "Weight", value: `${product.weight} g` },
+                        { label: "Avg Rating", value: product.avgRating > 0 ? `⭐ ${product.avgRating.toFixed(1)} (${product.ratingCount})` : "No ratings" },
+                        { label: "Views", value: product.viewCount.toLocaleString() },
                     ].map((row) => (
                         <Grid size={6} key={row.label}>
                             <Box sx={{ p: 1.5, bgcolor: "#f8fafc", borderRadius: 2 }}>
                                 <Typography sx={{ fontSize: 11, color: "#94a3b8", mb: 0.3 }}>{row.label}</Typography>
-                                <Typography sx={{ fontSize: 13.5, fontWeight: 600, color: "#0d1f13" }}>{row.value}</Typography>
+                                <Typography sx={{ fontSize: 13, fontWeight: 600, color: "#0d1f13" }}>
+                                    {row.value}
+                                </Typography>
                             </Box>
                         </Grid>
                     ))}
@@ -381,7 +248,9 @@ function ViewDrawer({ product, onClose, onEdit }: ViewDrawerProps) {
                 {/* Stock bar */}
                 <Box sx={{ mb: 2.5, p: 1.75, border: "1px solid #e8ecf0", borderRadius: 2 }}>
                     <Stack direction="row" justifyContent="space-between" alignItems="center" mb={1}>
-                        <Typography sx={{ fontSize: 12.5, fontWeight: 600, color: "#0d1f13" }}>Stock Level</Typography>
+                        <Typography sx={{ fontSize: 12.5, fontWeight: 600, color: "#0d1f13" }}>
+                            Total Stock
+                        </Typography>
                         <Typography sx={{ fontSize: 12.5, fontWeight: 700, color: sl.color }}>
                             {product.stock} units — {sl.label}
                         </Typography>
@@ -398,23 +267,72 @@ function ViewDrawer({ product, onClose, onEdit }: ViewDrawerProps) {
                     {product.stock <= 10 && product.stock > 0 && (
                         <Stack direction="row" alignItems="center" gap={0.5} mt={1}>
                             <WarningAmberRoundedIcon sx={{ fontSize: 13, color: "#f59e0b" }} />
-                            <Typography sx={{ fontSize: 11.5, color: "#854d0e" }}>Low stock — consider restocking</Typography>
+                            <Typography sx={{ fontSize: 11.5, color: "#854d0e" }}>
+                                Low stock — consider restocking
+                            </Typography>
                         </Stack>
                     )}
                 </Box>
 
+                {/* Variants */}
+                {variants.length > 0 && (
+                    <Box mb={2.5}>
+                        <Typography sx={{ fontSize: 12.5, fontWeight: 600, color: "#0d1f13", mb: 1 }}>
+                            Variants ({variants.length})
+                        </Typography>
+                        <Stack gap={1}>
+                            {variants.map((v, i) => (
+                                <Box
+                                    key={v.variant_id ?? i}
+                                    sx={{
+                                        display: "flex", alignItems: "center", gap: 1.5,
+                                        p: 1.25, bgcolor: "#f8fafc", borderRadius: 2,
+                                    }}
+                                >
+                                    {v.picture && (
+                                        <Box
+                                            component="img"
+                                            src={v.picture}
+                                            alt={v.name}
+                                            sx={{ width: 36, height: 36, objectFit: "cover", borderRadius: 1 }}
+                                        />
+                                    )}
+                                    <Box sx={{ flex: 1 }}>
+                                        <Typography sx={{ fontSize: 12.5, fontWeight: 600, color: "#0d1f13" }}>
+                                            {v.name ?? `Variant ${i + 1}`}
+                                        </Typography>
+                                        <Typography sx={{ fontSize: 11.5, color: "#94a3b8" }}>
+                                            Stock: {v.stock ?? 0} · {fmtPrice(v.price ?? 0)}
+                                        </Typography>
+                                    </Box>
+                                </Box>
+                            ))}
+                        </Stack>
+                    </Box>
+                )}
+
                 {/* Description */}
                 <Box mb={3}>
-                    <Typography sx={{ fontSize: 12.5, fontWeight: 600, color: "#0d1f13", mb: 0.75 }}>Description</Typography>
-                    <Typography sx={{ fontSize: 13, color: "#475569", lineHeight: 1.6 }}>{product.description}</Typography>
+                    <Typography sx={{ fontSize: 12.5, fontWeight: 600, color: "#0d1f13", mb: 0.75 }}>
+                        Description
+                    </Typography>
+                    <Typography sx={{ fontSize: 13, color: "#475569", lineHeight: 1.6 }}>
+                        {product.description || "—"}
+                    </Typography>
                 </Box>
             </Box>
 
-            {/* Footer actions */}
+            {/* Footer */}
             <Box sx={{ px: 3, py: 2, borderTop: "1px solid #e8ecf0" }}>
-                <Button fullWidth variant="contained" size="small" startIcon={<EditRoundedIcon fontSize="small" />}
+                <Button
+                    fullWidth variant="contained" size="small"
+                    startIcon={<EditRoundedIcon fontSize="small" />}
                     onClick={() => onEdit(product)}
-                    sx={{ bgcolor: PRIMARY, "&:hover": { bgcolor: "#00502f" }, textTransform: "none", fontWeight: 600 }}>
+                    sx={{
+                        bgcolor: PRIMARY, "&:hover": { bgcolor: "#00502f" },
+                        textTransform: "none", fontWeight: 600,
+                    }}
+                >
                     Edit Product
                 </Button>
             </Box>
@@ -422,98 +340,103 @@ function ViewDrawer({ product, onClose, onEdit }: ViewDrawerProps) {
     );
 }
 
-// ─── Main Products Page ────────────────────────────────────────────────────────
+// ─── Konstanta ────────────────────────────────────────────────────────────────
 const PAGE_SIZE = 8;
 
-export default function ProductsPage() {
-    const [products, setProducts] = useState<Product[]>(SEED_PRODUCTS);
+// Kategori diambil dinamis dari data, tapi fallback ke semua
+const ALL_LABEL = "All";
+
+// ─── Main Component ───────────────────────────────────────────────────────────
+export default function ProductsList() {
+    // ── State ──────────────────────────────────────────────────────────────────
+    const [products, setProducts] = useState<UIProduct[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
     const [search, setSearch] = useState("");
-    const [catFilter, setCatFilter] = useState<ProductCategory | "All">("All");
-    const [statusFilter, setStatus] = useState<ProductStatus | "All">("All");
+    const [catFilter, setCatFilter] = useState(ALL_LABEL);
     const [page, setPage] = useState(1);
 
-    // dialogs / drawer
-    const [viewProduct, setViewProduct] = useState<Product | null>(null);
-    const [formOpen, setFormOpen] = useState(false);
-    const [formMode, setFormMode] = useState<"add" | "edit">("add");
-    const [editingId, setEditingId] = useState<string | null>(null);
-    const [draft, setDraft] = useState<FormDraft>(EMPTY_FORM);
-    const [deleteTarget, setDeleteTarget] = useState<Product | null>(null);
+    const [viewProduct, setViewProduct] = useState<UIProduct | null>(null);
+
+    // ── Fetch ──────────────────────────────────────────────────────────────────
+    useEffect(() => {
+        const fetchProducts = async () => {
+            try {
+                setLoading(true);
+                setError(null);
+
+                const res = await fetch("/api/products");   // sesuaikan base URL jika perlu
+
+                if (!res.ok) throw new Error(`Server error: ${res.status}`);
+
+                const data = await res.json();
+
+                // Backend response: { message, records: BackendProduct[] }
+                const raw: BackendProduct[] = Array.isArray(data.records)
+                    ? data.records
+                    : [];
+
+                setProducts(raw.map(adaptProduct));
+            } catch (err) {
+                setError(err instanceof Error ? err.message : "Unknown error");
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchProducts();
+    }, []);
 
     // ── Derived ────────────────────────────────────────────────────────────────
+    // Kategori unik dari data
+    const categories = useMemo(() => {
+        const cats = [...new Set(products.map((p) => p.category))].sort();
+        return [ALL_LABEL, ...cats];
+    }, [products]);
+
     const filtered = useMemo(() => {
         const q = search.toLowerCase();
         return products.filter((p) => {
-            const matchQ = !q || p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q);
-            const matchCat = catFilter === "All" || p.category === catFilter;
-            const matchSt = statusFilter === "All" || p.status === statusFilter;
-            return matchQ && matchCat && matchSt;
+            const matchQ = !q || p.name.toLowerCase().includes(q) || p.id.toLowerCase().includes(q);
+            const matchCat = catFilter === ALL_LABEL || p.category === catFilter;
+            return matchQ && matchCat;
         });
-    }, [products, search, catFilter, statusFilter]);
+    }, [products, search, catFilter]);
 
     const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
     const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
+    // Summary stats
     const totalStock = products.reduce((acc, p) => acc + p.stock, 0);
     const lowStockCount = products.filter((p) => p.stock > 0 && p.stock <= 10).length;
-    const activeCount = products.filter((p) => p.status === "Active").length;
-    const totalRevenue = products.reduce((acc, p) => acc + p.price * p.sold, 0);
+    const outOfStock = products.filter((p) => p.stock === 0).length;
 
-    // ── Handlers ───────────────────────────────────────────────────────────────
-    const openAdd = () => {
-        setDraft(EMPTY_FORM);
-        setFormMode("add");
-        setEditingId(null);
-        setFormOpen(true);
-    };
+    // ── Render: loading / error ────────────────────────────────────────────────
+    if (loading) {
+        return (
+            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", height: 300 }}>
+                <Stack alignItems="center" gap={1.5}>
+                    <CircularProgress size={32} sx={{ color: PRIMARY }} />
+                    <Typography sx={{ fontSize: 13, color: "#64748b" }}>Loading products…</Typography>
+                </Stack>
+            </Box>
+        );
+    }
 
-    const openEdit = (p: Product) => {
-        const { id, ...rest } = p;
-        setDraft(rest);
-        setEditingId(id);
-        setFormMode("edit");
-        setViewProduct(null);
-        setFormOpen(true);
-    };
+    if (error) {
+        return (
+            <Box sx={{ p: 3 }}>
+                <Alert severity="error" sx={{ borderRadius: 2 }}>
+                    Failed to load products: {error}
+                </Alert>
+            </Box>
+        );
+    }
 
-    const handleDraftChange = (field: keyof FormDraft, value: string | number) => {
-        setDraft((prev) => ({ ...prev, [field]: value }));
-    };
-
-    const handleFormSubmit = () => {
-        if (!draft.name.trim()) return;
-        if (formMode === "add") {
-            const newProduct: Product = {
-                ...draft,
-                id: `P${String(products.length + 1).padStart(3, "0")}`,
-                sold: 0,
-            };
-            setProducts((prev) => [newProduct, ...prev]);
-        } else if (editingId) {
-            setProducts((prev) =>
-                prev.map((p) =>
-                    p.id === editingId ? { ...p, ...draft } : p
-                )
-            );
-        }
-        setFormOpen(false);
-    };
-
-    const handleDelete = () => {
-        if (!deleteTarget) return;
-        setProducts((prev) => prev.filter((p) => p.id !== deleteTarget.id));
-        setDeleteTarget(null);
-    };
-
-    const handleSearchChange = (e: ChangeEvent<HTMLInputElement>) => {
-        setSearch(e.target.value);
-        setPage(1);
-    };
-
-    // ── Render ─────────────────────────────────────────────────────────────────
+    // ── Render: main ──────────────────────────────────────────────────────────
     return (
-        <Box sx={{ flex: 1, overflowY: "auto", p: 3, bgcolor: BG }}>
-
+        <Box sx={{ flex: 1, overflowY: "auto", bgcolor: BG }}>
             {/* Page header */}
             <Stack direction="row" justifyContent="space-between" alignItems="flex-start" mb={2.5}>
                 <Box>
@@ -522,17 +445,22 @@ export default function ProductsPage() {
                         Manage your store inventory
                     </Typography>
                 </Box>
-                <Button
-                    variant="contained"
-                    startIcon={<AddRoundedIcon />}
-                    onClick={openAdd}
-                    sx={{
-                        bgcolor: PRIMARY, "&:hover": { bgcolor: "#00502f" },
-                        textTransform: "none", fontWeight: 600, borderRadius: 2,
-                    }}
-                >
-                    Add Product
-                </Button>
+                {/* Add Product — disabled untuk sekarang (perlu multer setup) */}
+                <Tooltip title="Coming soon — requires file upload setup">
+                    <span>
+                        <Button
+                            variant="contained"
+                            startIcon={<AddRoundedIcon />}
+                            disabled
+                            sx={{
+                                bgcolor: PRIMARY, "&:hover": { bgcolor: "#00502f" },
+                                textTransform: "none", fontWeight: 600, borderRadius: 2,
+                            }}
+                        >
+                            Add Product
+                        </Button>
+                    </span>
+                </Tooltip>
             </Stack>
 
             {/* Summary cards */}
@@ -542,7 +470,7 @@ export default function ProductsPage() {
                         icon={<InventoryRoundedIcon sx={{ fontSize: 18 }} />}
                         iconBg="#dcfce7" iconColor="#16a34a"
                         label="Total Products" value={products.length}
-                        sub={`${activeCount} active`}
+                        sub={`${products.length - outOfStock} with stock`}
                     />
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6, md: 3 }}>
@@ -550,7 +478,7 @@ export default function ProductsPage() {
                         icon={<CheckCircleRoundedIcon sx={{ fontSize: 18 }} />}
                         iconBg="#dbeafe" iconColor="#1d4ed8"
                         label="Total Stock" value={totalStock.toLocaleString()}
-                        sub="across all products"
+                        sub="across all variants"
                     />
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6, md: 3 }}>
@@ -565,8 +493,8 @@ export default function ProductsPage() {
                     <SummaryCard
                         icon={<TrendingUpRoundedIcon sx={{ fontSize: 18 }} />}
                         iconBg="#fce7f3" iconColor="#9d174d"
-                        label="Est. Revenue" value={fmtPrice(totalRevenue)}
-                        sub="lifetime sold"
+                        label="Out of Stock" value={outOfStock}
+                        sub="no stock available"
                     />
                 </Grid>
             </Grid>
@@ -588,42 +516,34 @@ export default function ProductsPage() {
                             >
                                 <SearchRoundedIcon sx={{ fontSize: 17, color: "#94a3b8" }} />
                                 <InputBase
-                                    placeholder="Search by name or SKU…"
+                                    placeholder="Search by name or ID…"
                                     sx={{ fontSize: 13, flex: 1 }}
                                     value={search}
-                                    onChange={handleSearchChange}
+                                    onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                                        setSearch(e.target.value);
+                                        setPage(1);
+                                    }}
                                 />
                             </Box>
 
-                            {/* Filters */}
+                            {/* Category filter */}
                             <Stack direction="row" gap={1} flexWrap="wrap" alignItems="center">
                                 <FilterListRoundedIcon sx={{ fontSize: 16, color: "#94a3b8" }} />
-                                <FormControl size="small" sx={{ minWidth: 130 }}>
+                                <FormControl size="small" sx={{ minWidth: 160 }}>
                                     <Select
                                         value={catFilter}
                                         onChange={(e: SelectChangeEvent) => {
-                                            setCatFilter(e.target.value as ProductCategory | "All");
+                                            setCatFilter(e.target.value);
                                             setPage(1);
                                         }}
                                         displayEmpty
                                         sx={{ fontSize: 12.5, borderRadius: 1.5, bgcolor: "#fff" }}
                                     >
-                                        <MenuItem value="All">All Categories</MenuItem>
-                                        {CATEGORIES.map((c) => <MenuItem key={c} value={c} sx={{ fontSize: 12.5 }}>{c}</MenuItem>)}
-                                    </Select>
-                                </FormControl>
-                                <FormControl size="small" sx={{ minWidth: 130 }}>
-                                    <Select
-                                        value={statusFilter}
-                                        onChange={(e: SelectChangeEvent) => {
-                                            setStatus(e.target.value as ProductStatus | "All");
-                                            setPage(1);
-                                        }}
-                                        displayEmpty
-                                        sx={{ fontSize: 12.5, borderRadius: 1.5, bgcolor: "#fff" }}
-                                    >
-                                        <MenuItem value="All">All Statuses</MenuItem>
-                                        {ALL_STATUSES.map((s) => <MenuItem key={s} value={s} sx={{ fontSize: 12.5 }}>{s}</MenuItem>)}
+                                        {categories.map((c) => (
+                                            <MenuItem key={c} value={c} sx={{ fontSize: 12.5 }}>
+                                                {c === ALL_LABEL ? "All Categories" : c}
+                                            </MenuItem>
+                                        ))}
                                     </Select>
                                 </FormControl>
                             </Stack>
@@ -638,8 +558,9 @@ export default function ProductsPage() {
                     <Table size="small">
                         <TableHead>
                             <TableRow sx={{ bgcolor: "#fafafa" }}>
-                                {["Product", "SKU", "Category", "Price", "Stock", "Sold", "Status", "Actions"].map((h) => (
-                                    <TableCell key={h}
+                                {["Product", "ID", "Category", "Min Price", "Stock", "Rating", "Actions"].map((h) => (
+                                    <TableCell
+                                        key={h}
                                         sx={{
                                             fontSize: 11, color: "#94a3b8", fontWeight: 600,
                                             textTransform: "uppercase", letterSpacing: 0.5,
@@ -655,7 +576,10 @@ export default function ProductsPage() {
                         <TableBody>
                             {paginated.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={8} sx={{ textAlign: "center", py: 5, color: "#94a3b8", fontSize: 13 }}>
+                                    <TableCell
+                                        colSpan={8}
+                                        sx={{ textAlign: "center", py: 5, color: "#94a3b8", fontSize: 13 }}
+                                    >
                                         No products match your filters.
                                     </TableCell>
                                 </TableRow>
@@ -663,7 +587,8 @@ export default function ProductsPage() {
                                 paginated.map((p) => {
                                     const sl = stockLevel(p.stock);
                                     return (
-                                        <TableRow key={p.id}
+                                        <TableRow
+                                            key={p.id}
                                             sx={{
                                                 "&:hover td": { bgcolor: "#f8fafc" },
                                                 "&:last-child td": { border: 0 },
@@ -671,35 +596,61 @@ export default function ProductsPage() {
                                             }}
                                             onClick={() => setViewProduct(p)}
                                         >
-                                            {/* Product name */}
+                                            {/* Product */}
                                             <TableCell sx={{ borderBottom: "1px solid #f8fafc", py: 1.25 }}>
                                                 <Stack direction="row" alignItems="center" gap={1.25}>
                                                     <Avatar
+                                                        src={p.picture ?? undefined}
                                                         sx={{
-                                                            width: 34, height: 34, bgcolor: BG,
-                                                            fontSize: 17, borderRadius: 1.5,
+                                                            width: 34, height: 34,
+                                                            bgcolor: BG, fontSize: 17, borderRadius: 1.5,
                                                         }}
                                                     >
-                                                        {p.emoji}
+                                                        📦
                                                     </Avatar>
-                                                    <Typography sx={{ fontSize: 13, fontWeight: 600, color: "#0d1f13", whiteSpace: "nowrap" }}>
+                                                    <Typography
+                                                        sx={{
+                                                            fontSize: 13, fontWeight: 600, color: "#0d1f13",
+                                                            whiteSpace: "nowrap", maxWidth: 180,
+                                                            overflow: "hidden", textOverflow: "ellipsis",
+                                                        }}
+                                                    >
                                                         {p.name}
                                                     </Typography>
                                                 </Stack>
                                             </TableCell>
 
-                                            {/* SKU */}
-                                            <TableCell sx={{ fontSize: 12, color: "#94a3b8", fontFamily: "monospace", borderBottom: "1px solid #f8fafc" }}>
-                                                {p.sku}
+                                            {/* ID */}
+                                            <TableCell
+                                                sx={{
+                                                    fontSize: 11.5, color: "#94a3b8",
+                                                    fontFamily: "monospace",
+                                                    borderBottom: "1px solid #f8fafc",
+                                                    maxWidth: 100,
+                                                    overflow: "hidden", textOverflow: "ellipsis",
+                                                    whiteSpace: "nowrap",
+                                                }}
+                                            >
+                                                {p.id.slice(0, 8)}…
                                             </TableCell>
 
                                             {/* Category */}
-                                            <TableCell sx={{ fontSize: 12.5, color: "#475569", borderBottom: "1px solid #f8fafc", whiteSpace: "nowrap" }}>
+                                            <TableCell
+                                                sx={{
+                                                    fontSize: 12.5, color: "#475569",
+                                                    borderBottom: "1px solid #f8fafc", whiteSpace: "nowrap",
+                                                }}
+                                            >
                                                 {p.category}
                                             </TableCell>
 
                                             {/* Price */}
-                                            <TableCell sx={{ fontSize: 13, fontWeight: 600, color: "#0d1f13", borderBottom: "1px solid #f8fafc", whiteSpace: "nowrap" }}>
+                                            <TableCell
+                                                sx={{
+                                                    fontSize: 13, fontWeight: 600, color: "#0d1f13",
+                                                    borderBottom: "1px solid #f8fafc", whiteSpace: "nowrap",
+                                                }}
+                                            >
                                                 {fmtPrice(p.price)}
                                             </TableCell>
 
@@ -715,44 +666,61 @@ export default function ProductsPage() {
                                                         sx={{
                                                             height: 3, borderRadius: 99, width: 60,
                                                             bgcolor: "#f0f3f7",
-                                                            "& .MuiLinearProgress-bar": { bgcolor: sl.barColor, borderRadius: 99 },
+                                                            "& .MuiLinearProgress-bar": {
+                                                                bgcolor: sl.barColor, borderRadius: 99,
+                                                            },
                                                         }}
                                                     />
                                                 </Stack>
                                             </TableCell>
 
-                                            {/* Sold */}
-                                            <TableCell sx={{ fontSize: 12.5, color: "#475569", borderBottom: "1px solid #f8fafc" }}>
-                                                {p.sold.toLocaleString()}
+                                            {/* Rating */}
+                                            <TableCell
+                                                sx={{ fontSize: 12.5, color: "#475569", borderBottom: "1px solid #f8fafc" }}
+                                            >
+                                                {p.avgRating > 0
+                                                    ? `⭐ ${p.avgRating.toFixed(1)}`
+                                                    : <Typography sx={{ fontSize: 12, color: "#cbd5e1" }}>—</Typography>
+                                                }
                                             </TableCell>
 
-                                            {/* Status */}
-                                            <TableCell sx={{ borderBottom: "1px solid #f8fafc" }}>
-                                                <Chip label={p.status} size="small"
-                                                    sx={{ height: 21, fontSize: 11, fontWeight: 600, borderRadius: "99px", ...STATUS_SX[p.status] }} />
-                                            </TableCell>
+                                            {/* Views */}
+                                            {/* <TableCell
+                                                sx={{ fontSize: 12.5, color: "#475569", borderBottom: "1px solid #f8fafc" }}
+                                            >
+                                                {p.viewCount.toLocaleString()}
+                                            </TableCell> */}
 
                                             {/* Actions */}
-                                            <TableCell sx={{ borderBottom: "1px solid #f8fafc" }}
-                                                onClick={(e) => e.stopPropagation()}>
+                                            <TableCell
+                                                sx={{ borderBottom: "1px solid #f8fafc" }}
+                                                onClick={(e) => e.stopPropagation()}
+                                            >
                                                 <Stack direction="row" gap={0.25}>
                                                     <Tooltip title="View" placement="top">
-                                                        <IconButton size="small" onClick={() => setViewProduct(p)}
-                                                            sx={{ color: "#94a3b8", "&:hover": { color: PRIMARY, bgcolor: "#f0fdf4" } }}>
+                                                        <IconButton
+                                                            size="small"
+                                                            onClick={() => setViewProduct(p)}
+                                                            sx={{ color: "#94a3b8", "&:hover": { color: PRIMARY, bgcolor: "#f0fdf4" } }}
+                                                        >
                                                             <VisibilityRoundedIcon sx={{ fontSize: 16 }} />
                                                         </IconButton>
                                                     </Tooltip>
-                                                    <Tooltip title="Edit" placement="top">
-                                                        <IconButton size="small" onClick={() => openEdit(p)}
-                                                            sx={{ color: "#94a3b8", "&:hover": { color: "#1d4ed8", bgcolor: "#eff6ff" } }}>
-                                                            <EditRoundedIcon sx={{ fontSize: 16 }} />
-                                                        </IconButton>
+                                                    <Tooltip title="Edit (coming soon)" placement="top">
+                                                        <span>
+                                                            <IconButton size="small" disabled
+                                                                sx={{ color: "#94a3b8" }}>
+                                                                <EditRoundedIcon sx={{ fontSize: 16 }} />
+                                                            </IconButton>
+                                                        </span>
                                                     </Tooltip>
-                                                    <Tooltip title="Delete" placement="top">
-                                                        <IconButton size="small" onClick={() => setDeleteTarget(p)}
-                                                            sx={{ color: "#94a3b8", "&:hover": { color: "#ef4444", bgcolor: "#fef2f2" } }}>
-                                                            <DeleteRoundedIcon sx={{ fontSize: 16 }} />
-                                                        </IconButton>
+                                                    <Tooltip title="Delete (coming soon)" placement="top">
+                                                        <span>
+                                                            <IconButton size="small" disabled
+                                                                sx={{ color: "#94a3b8" }}>
+                                                                <DeleteRoundedIcon sx={{ fontSize: 16 }} />
+                                                            </IconButton>
+                                                        </span>
                                                     </Tooltip>
                                                 </Stack>
                                             </TableCell>
@@ -765,7 +733,12 @@ export default function ProductsPage() {
 
                     {/* Pagination */}
                     {totalPages > 1 && (
-                        <Box sx={{ display: "flex", justifyContent: "flex-end", px: 2.5, py: 2, borderTop: "1px solid #f1f5f9" }}>
+                        <Box
+                            sx={{
+                                display: "flex", justifyContent: "flex-end",
+                                px: 2.5, py: 2, borderTop: "1px solid #f1f5f9",
+                            }}
+                        >
                             <Pagination
                                 count={totalPages}
                                 page={page}
@@ -781,27 +754,15 @@ export default function ProductsPage() {
                 </CardContent>
             </Card>
 
-            {/* ── Overlays ─────────────────────────────────────────────────────────── */}
+            {/* View Drawer */}
             <ViewDrawer
                 product={viewProduct}
                 onClose={() => setViewProduct(null)}
-                onEdit={openEdit}
-            />
-
-            <ProductFormDialog
-                open={formOpen}
-                mode={formMode}
-                draft={draft}
-                onChange={handleDraftChange}
-                onSubmit={handleFormSubmit}
-                onClose={() => setFormOpen(false)}
-            />
-
-            <DeleteDialog
-                open={!!deleteTarget}
-                productName={deleteTarget?.name ?? ""}
-                onConfirm={handleDelete}
-                onClose={() => setDeleteTarget(null)}
+                onEdit={(p) => {
+                    // TODO: sambungkan ke edit flow dengan multer
+                    setViewProduct(null);
+                    console.log("Edit product:", p.id);
+                }}
             />
         </Box>
     );

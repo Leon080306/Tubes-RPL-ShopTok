@@ -4,27 +4,27 @@ import CheckoutPage from "../pages/orders/CheckoutPage";
 import { Layout } from "../components/Layout";
 
 const HomePage = lazy(() => import("../pages/HomePage"));
-const RegisterPage = lazy(() => import("../pages/Login&SignUp/RegisterPage"));
-const LoginPage = lazy(() => import("../pages/Login&SignUp/LoginPage"));
+const RegisterPage = lazy(() => import("../pages/login&signup/RegisterPage"));
+const LoginPage = lazy(() => import("../pages/login&signup/LoginPage"));
 
-const ProfilePage = lazy(() => import("../pages/Account/Profile/ProfilePage"));
-const EditProfilePage = lazy(() => import("../pages/Account/Profile/EditProfilePage"));
+const ProfilePage = lazy(() => import("../pages/account/profile/ProfilePage"));
+const EditProfilePage = lazy(() => import("../pages/account/profile/EditProfilePage"));
 
-const SettingProfilePage = lazy(() => import("../pages/Account/SettingProfilePage"))
+const SettingProfilePage = lazy(() => import("../pages/account/SettingProfilePage"))
 
-const SettingAddress = lazy(() => import("../pages/Account/Address/SettingAddress"))
-const SettingAddAddress = lazy(() => import("../pages/Account/Address/SettingAddAddress"))
-const SettingEditAddress = lazy(() => import("../pages/Account/Address/SettingEditAddress"));
+const SettingAddress = lazy(() => import("../pages/account/address/SettingAddress"))
+const SettingAddAddress = lazy(() => import("../pages/account/address/SettingAddAddress"))
+const SettingEditAddress = lazy(() => import("../pages/account/address/SettingEditAddress"));
 
-const SettingRekening = lazy(() => import("../pages/Account/Rekening/SettingRekening"));
-const SettingRekeningCard = lazy(() => import("../pages/Account/Rekening/SettingRekeningCard"));
-const SettingRekeningBank = lazy(() => import("../pages/Account/Rekening/SettingRekeningBank"));
+const SettingRekening = lazy(() => import("../pages/account/rekening/SettingRekening"));
+const SettingRekeningCard = lazy(() => import("../pages/account/rekening/SettingRekeningCard"));
+const SettingRekeningBank = lazy(() => import("../pages/account/rekening/SettingRekeningBank"));
 
 
 const ChatToko = lazy(() => import("../pages/Chat/ChatToko"))
-const SettingKeamanan = lazy(() => import("../pages/Account/SettingKeamanan"));
+const SettingKeamanan = lazy(() => import("../pages/account/SettingKeamanan"));
 
-const Wishlist = lazy(() => import("../pages/Account/Wishlist"));
+const Wishlist = lazy(() => import("../pages/account/Wishlist"));
 
 const ProductPage = lazy(() => import("../pages/products/ProductPage"));
 
@@ -34,7 +34,7 @@ const CartPage = lazy(() => import("../pages/CartPage"));
 
 const ShopProfile = lazy(() => import("../pages/Shop/ShopProfile"))
 
-const ShopDashboard = lazy(() => import("../pages/Shop/SellerDashboard"));
+const ShopDashboard = lazy(() => import("../pages/Shop/ShopDashboard"));
 const OrderDetailPage = lazy(() => import("../pages/orders/OrderDetailPage"));
 
 const UserManagementPage = lazy(() => import("../pages/admin/UserManagementPage"))
