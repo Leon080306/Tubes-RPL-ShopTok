@@ -8,6 +8,9 @@ export type BasicMenuProps = {
 export type Category = {
     category_id: string;
     name: string;
+    icon: string;
+    parent_id?: string | null;
+    totalProducts?: number;
 }
 
 export type Shop = {
@@ -165,9 +168,6 @@ export type ShopInfo = {
     
     owner?: UserInfo 
     products?: Product // ntr diganti pake type  Product. blom ada soalnya
-
-    owner?: UserInfo
-    products?: any[] // ntr diganti pake type  Product. blom ada soalnya
     createdAt?: string
     updatedAt?: string
 }

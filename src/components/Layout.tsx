@@ -12,7 +12,7 @@ import {
   Toolbar,
   Typography,
 } from "@mui/material";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState } from "react";
 import { Link, Outlet } from "react-router";
 import AppLogoInline from "../assets/logos/AppLogo-inline.png";
 import AppLogoOnly from "../assets/logos/AppLogo-iconOnly.png";
@@ -77,11 +77,60 @@ export function Layout() {
   const [selectedCategory, setSelectedCategory] = useState("Categories");
   const [search, setSearch] = useState("");
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [allProducts, setAllProducts] = useState<SearchProduct[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loadingCategories, setLoadingCategories] = useState(false);
+
   // const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const { userInfo } = useAppSelector((state) => state.auth);
 
-  useEffect(() => { }, [search]);
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const res = await fetch("/api/products");
+        if (!res.ok) return;
+        const data = await res.json();
+        const raw: BackendProduct[] = Array.isArray(data.records) ? data.records : [];
+        setAllProducts(raw.map(adaptToSearchProduct));
+      } catch (err) {
+        console.error("Failed to fetch products for search:", err);
+      }
+    };
+    fetchProducts();
+  }, []);
+
+  // const searchResults = useMemo(() => {
+  //   const q = search.trim().toLowerCase();
+  //   if (!q) return [];
+  //   return allProducts
+  //     .filter((p) => p.name.toLowerCase().includes(q))
+  //     .slice(0, 5);
+  // }, [search, allProducts]);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        setLoadingCategories(true);
+
+        const res = await fetch("/api/category", {
+          method: "GET",
+          credentials: "include",
+        });
+
+        const data = await res.json();
+
+        setCategories(data.records || []);
+      } catch (error) {
+        console.error("Failed to fetch categories:", error);
+      } finally {
+        setLoadingCategories(false);
+      }
+    };
+
+    fetchCategories();
+  }, []);
 
   const handleProfileNavigation = () => {
     if (userInfo?.role === "customer") {
@@ -348,63 +397,75 @@ export function Layout() {
                               gap: 2,
                             }}
                           >
-                            {categories.map((category) => (
-                              <Paper
-                                key={category.name}
-                                elevation={0}
-                                onClick={() => { }}
-                                sx={{
-                                  display: "flex",
-                                  gap: "18px",
-                                  alignItems: "center",
-                                  backgroundColor: "#f6f6f6",
-                                  borderRadius: "12px",
-                                  padding: "12px",
-                                  transition: "all 0.25s ease",
-                                  cursor: "pointer",
-                                  "&:hover": {
-                                    transform: "scale(1.02)",
-                                    boxShadow: 5,
-                                  },
-                                }}
-                              >
-                                <img
-                                  src={AppLogoOnly}
-                                  style={{
-                                    width: "60px",
-                                    height: "60px",
-                                    borderRadius: "6px",
+                            {loadingCategories ? (
+                              <CircularProgress />
+                            ) : (
+                              categories.map((category) => (
+                                <Paper
+                                  key={category.name}
+                                  elevation={0}
+                                  onClick={() => {
+                                    // Navigate FIRST
+                                    handleCategorySelect(category.name ?? "");
+
+                                    // Force close AFTER navigation starts
+                                    setTimeout(() => {
+                                      setSearchFocused(false);
+                                    }, 100);
                                   }}
-                                  alt=""
-                                />
-                                <Box
                                   sx={{
                                     display: "flex",
-                                    flexDirection: "column",
-                                    justifyContent: "space-between",
-                                    height: "50px",
-                                    flexGrow: 1,
+                                    gap: "18px",
+                                    alignItems: "center",
+                                    backgroundColor: "#f6f6f6",
+                                    borderRadius: "12px",
+                                    padding: "12px",
+                                    transition: "all 0.25s ease",
+                                    cursor: "pointer",
+                                    "&:hover": {
+                                      transform: "scale(1.02)",
+                                      boxShadow: 5,
+                                    },
                                   }}
                                 >
-                                  <Typography
-                                    variant="subtitle1"
-                                    sx={{ fontWeight: 600, lineHeight: 1.2 }}
-                                  >
-                                    {category.name}
-                                  </Typography>
-
-                                  <Typography
-                                    variant="body2"
+                                  <img
+                                    src={AppLogoOnly}
+                                    style={{
+                                      width: "60px",
+                                      height: "60px",
+                                      borderRadius: "6px",
+                                    }}
+                                    alt=""
+                                  />
+                                  <Box
                                     sx={{
-                                      color: "text.secondary",
-                                      lineHeight: 1.2,
+                                      display: "flex",
+                                      flexDirection: "column",
+                                      justifyContent: "space-between",
+                                      height: "50px",
+                                      flexGrow: 1,
                                     }}
                                   >
-                                    12 products available
-                                  </Typography>
-                                </Box>
-                              </Paper>
-                            ))}
+                                    <Typography
+                                      variant="subtitle1"
+                                      sx={{ fontWeight: 600, lineHeight: 1.2 }}
+                                    >
+                                      {category.name}
+                                    </Typography>
+
+                                    <Typography
+                                      variant="body2"
+                                      sx={{
+                                        color: "text.secondary",
+                                        lineHeight: 1.2,
+                                      }}
+                                    >
+                                      {category.totalProducts} products available
+                                    </Typography>
+                                  </Box>
+                                </Paper>
+                              ))
+                            )}
                           </Box>
                         </>
                       ) : (
@@ -454,28 +515,28 @@ export function Layout() {
                                 </Typography>
                               </Box>
 
-                            {/* Rating */}
-                            <Box sx={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                              <Rating
-                                name="read-only"
-                                value={product.rating}
-                                readOnly
-                                precision={0.5}           // ← tambah precision buat avg rating
-                                sx={{ color: "#003f29" }}
-                              />
-                              <Typography>({product.totalReviews})</Typography>
-                            </Box>
+                              {/* Rating */}
+                              <Box sx={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                                <Rating
+                                  name="read-only"
+                                  value={product.rating}
+                                  readOnly
+                                  precision={0.5}           // ← tambah precision buat avg rating
+                                  sx={{ color: "#003f29" }}
+                                />
+                                <Typography>({product.totalReviews})</Typography>
+                              </Box>
 
-                            {/* Harga */}
-                            <Typography>
-                              {product.price > 0
-                                ? `Rp. ${product.price.toLocaleString("de-DE")}`
-                                : "Harga tidak tersedia"}
-                            </Typography>
-                          </Box>
-                        ))}
-                      </Box>
-                    )}
+                              {/* Harga */}
+                              <Typography>
+                                {product.price > 0
+                                  ? `Rp. ${product.price.toLocaleString("de-DE")}`
+                                  : "Harga tidak tersedia"}
+                              </Typography>
+                            </Box>
+                          ))}
+                        </Box>
+                      )}
                   </Paper>
                 </Box>
               )}

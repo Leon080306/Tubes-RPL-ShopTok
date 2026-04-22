@@ -4,11 +4,11 @@ import CheckoutPage from "../pages/orders/CheckoutPage";
 import { Layout } from "../components/Layout";
 
 const HomePage = lazy(() => import("../pages/HomePage"));
-const RegisterPage = lazy(() => import("../pages/Login&SignUp/RegisterPage"));
-const LoginPage = lazy(() => import("../pages/Login&SignUp/LoginPage"));
+const RegisterPage = lazy(() => import("../pages/login&signup/RegisterPage"));
+const LoginPage = lazy(() => import("../pages/login&signup/LoginPage"));
 
-const ForgotPasswordPage = lazy(() => import("../pages/Login&SignUp/ForgotPasswordPage"));
-const ResetPasswordPage = lazy(() => import("../pages/Login&SignUp/ResetPasswordPage"));
+const ForgotPasswordPage = lazy(() => import("../pages/login&signup/ForgotPasswordPage"));
+const ResetPasswordPage = lazy(() => import("../pages/login&signup/ResetPasswordPage"));
 
 const ProfilePage = lazy(() => import("../pages/account/profile/ProfilePage"));
 const EditProfilePage = lazy(() => import("../pages/account/profile/EditProfilePage"));
