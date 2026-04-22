@@ -28,16 +28,86 @@ import { useNavigate } from "react-router";
 import type { Category } from "../type";
 // import { Avatar, Menu, MenuItem } from "@mui/material";
 
+interface BackendVariant {
+  price?: number;
+}
+
+interface BackendRating {
+  value: number;
+}
+
+interface BackendProduct {
+  product_id: string;
+  name: string;
+  variants?: BackendVariant[];
+  ratings?: BackendRating[];
+}
+
+// Shape yang dipakai UI search result
+interface SearchProduct {
+  name: string;
+  rating: number;       // rata-rata
+  totalReviews: number;
+  price: number;        // min price dari variants (IDR asli)
+}
+
+// ─── Helper ───────────────────────────────────────────────────────────────────
+function adaptToSearchProduct(p: BackendProduct): SearchProduct {
+  const variants = p.variants ?? [];
+  const ratings = p.ratings ?? [];
+
+  const prices = variants.map((v) => v.price ?? 0).filter((x) => x > 0);
+  const minPrice = prices.length > 0 ? Math.min(...prices) : 0;
+
+  const avgRating =
+    ratings.length > 0
+      ? ratings.reduce((acc, r) => acc + r.value, 0) / ratings.length
+      : 0;
+
+  return {
+    name: p.name,
+    rating: avgRating,
+    totalReviews: ratings.length,
+    price: minPrice,
+  };
+}
+
 export function Layout() {
   const [searchFocused, setSearchFocused] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("Categories");
   const [search, setSearch] = useState("");
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [allProducts, setAllProducts] = useState<SearchProduct[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loadingCategories, setLoadingCategories] = useState(false);
 
   // const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const { userInfo } = useAppSelector((state) => state.auth);
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const res = await fetch("/api/products");
+        if (!res.ok) return;
+        const data = await res.json();
+        const raw: BackendProduct[] = Array.isArray(data.records) ? data.records : [];
+        setAllProducts(raw.map(adaptToSearchProduct));
+      } catch (err) {
+        console.error("Failed to fetch products for search:", err);
+      }
+    };
+    fetchProducts();
+  }, []);
+
+  // const searchResults = useMemo(() => {
+  //   const q = search.trim().toLowerCase();
+  //   if (!q) return [];
+  //   return allProducts
+  //     .filter((p) => p.name.toLowerCase().includes(q))
+  //     .slice(0, 5);
+  // }, [search, allProducts]);
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -445,36 +515,28 @@ export function Layout() {
                                 </Typography>
                               </Box>
 
-                              <Box
-                                sx={{
-                                  display: "flex",
-                                  alignItems: "center",
-                                  gap: "8px",
-                                }}
-                              >
+                              {/* Rating */}
+                              <Box sx={{ display: "flex", alignItems: "center", gap: "8px" }}>
                                 <Rating
                                   name="read-only"
                                   value={product.rating}
                                   readOnly
-                                  sx={{
-                                    color: "#003f29",
-                                  }}
+                                  precision={0.5}           // ← tambah precision buat avg rating
+                                  sx={{ color: "#003f29" }}
                                 />
-                                <Typography>
-                                  ({product.totalReviews})
-                                </Typography>
+                                <Typography>({product.totalReviews})</Typography>
                               </Box>
 
+                              {/* Harga */}
                               <Typography>
-                                Rp. {product.price.toLocaleString("de-DE")}
+                                {product.price > 0
+                                  ? `Rp. ${product.price.toLocaleString("de-DE")}`
+                                  : "Harga tidak tersedia"}
                               </Typography>
                             </Box>
                           ))}
                         </Box>
-                      )
-
-                      // <Typography variant="body1">Finding products...</Typography>
-                    }
+                      )}
                   </Paper>
                 </Box>
               )}

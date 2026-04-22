@@ -23,7 +23,6 @@ const SettingRekening = lazy(() => import("../pages/Account/Rekening/SettingReke
 const SettingRekeningCard = lazy(() => import("../pages/Account/Rekening/SettingRekeningCard"));
 const SettingRekeningBank = lazy(() => import("../pages/Account/Rekening/SettingRekeningBank"));
 
-
 const ChatToko = lazy(() => import("../pages/Chat/ChatToko"))
 const SettingKeamanan = lazy(() => import("../pages/Account/SettingKeamanan"));
 
@@ -38,7 +37,10 @@ const CartPage = lazy(() => import("../pages/CartPage"));
 
 const ShopProfile = lazy(() => import("../pages/Shop/ShopProfile"))
 
-const ShopDashboard = lazy(() => import("../pages/Shop/SellerDashboard"));
+const ShopDashboard = lazy(() => import("../pages/Shop/ShopDashboard"));
+const CreateShopPage = lazy(() => import("../pages/Shop/CreateShop"));
+const AddProductPage = lazy(() => import("../pages/Shop/AddProductPage"));
+const EditProductPage = lazy(() => import("../pages/Shop/EditProduct"));
 const OrderDetailPage = lazy(() => import("../pages/orders/OrderDetailPage"));
 
 const CategoryManagement = lazy(() => import("../pages/admin/CategoryManagement"))
@@ -80,11 +82,12 @@ export const AppRoutes = () => {
 
         <Route path="/orders" element={<OrderHistoryPage />} />
         <Route path="/orders/checkout" element={<CheckoutPage />} />
-        <Route path="/orders/detail" element={<OrderDetailPage />} />
+        <Route path="/orders/detail/:order_id" element={<OrderDetailPage />} />
 
         <Route path="/cart" element={<CartPage />} />
 
         <Route path="/shop/:shopId" element={<ShopProfile />} />
+        <Route path="/create-shop" element={<CreateShopPage />} />
         <Route path="/wishlist" element={<Wishlist />} />
 
         <Route path="/admin/category-management" element={<CategoryManagement />} />
@@ -96,6 +99,8 @@ export const AppRoutes = () => {
       </Route>
 
       <Route path="/shop/dashboard" element={<ShopDashboard />} />
+      <Route path="/shop/add-product" element={<AddProductPage />} />
+      <Route path="/shop/edit-product/:id" element={<EditProductPage />} />
     </Routes>
   );
 };

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router"
 import {
   Avatar, Box, Typography, Button, Stack, Container,
@@ -14,6 +14,8 @@ import {
   Add as AddIcon
 } from "@mui/icons-material";
 import { useAppSelector } from "../../hooks/useAppSelector";
+import type { Product, Rating, ShopInfo } from "../../type";
+import formatPrice from "../../utils/FormatPrice";
 
 const ALL_SHOPS_MOCK = [
   {
@@ -34,47 +36,153 @@ const ALL_SHOPS_MOCK = [
   }
 ];
 
+type SearchBarProps = {
+  searchQuery: string;
+  setSearchQuery: (val: string) => void;
+};
+
+const SearchBar = ({ searchQuery, setSearchQuery }: SearchBarProps) => {
+  return (
+    <Paper
+      component="form"
+      onSubmit={(e) => e.preventDefault()}
+      sx={{
+        p: '2px 4px',
+        display: 'flex',
+        alignItems: 'center',
+        width: { xs: '100%', md: 300 },
+        bgcolor: '#f0f0f0',
+        boxShadow: 'none'
+      }}
+    >
+      <InputBase
+        sx={{ ml: 1, flex: 1, fontSize: '0.9rem' }}
+        placeholder="Cari di toko ini..."
+        value={searchQuery}
+        onChange={(e) => setSearchQuery(e.target.value)}
+      />
+      <IconButton sx={{ p: '10px' }}>
+        <SearchIcon />
+      </IconButton>
+    </Paper>
+  );
+};
+
 export default function ShopProfile() {
   const { shopId } = useParams();
   const navigate = useNavigate();
   const { userInfo } = useAppSelector((state) => state.auth);
 
-  const shop = useMemo(() => {
-    if (userInfo?.shop_info?.shop_id === shopId) {
-      return userInfo?.shop_info;
-    }
-    return ALL_SHOPS_MOCK.find((s) => s.shop_id === shopId);
-  }, [shopId, userInfo]);
+  // const shop = useMemo(() => {
+  //   if (userInfo?.shop_info?.shop_id === shopId) {
+  //     return userInfo?.shop_info;
+  //   }
+  //   return ALL_SHOPS_MOCK.find((s) => s.shop_id === shopId);
+  // }, [shopId, userInfo]);
 
   const [tabValue, setTabValue] = useState(0);
   const [sortValue, setSortValue] = useState("populer");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
 
-  // --- MOCK DATA ---
-  const dummyProducts = [
-    { id: 1, name: "Samsung Galaxy A16 8/128GB - Gray", price: 2759000, category: "Smartphone", sales: "10RB+", rating: 4.9, image: "https://via.placeholder.com/200" },
-    { id: 2, name: "Samsung Galaxy Buds Pro - Black", price: 799000, category: "Accessories", sales: "1RB+", rating: 4.9, image: "https://via.placeholder.com/200" },
-    { id: 3, name: "Crystal UHD 4K TV 43 Inch", price: 3309000, category: "Electronics", sales: "3RB+", rating: 4.9, image: "https://via.placeholder.com/200" },
-  ];
+  const [shop, setShop] = useState<ShopInfo>();
+  const [products, setProducts] = useState<Product[]>([]);
 
-  const categories = ["Smartphone", "Electronics", "Accessories", "Home Appliances"];
+  // --- MOCK DATA ---
+  // const dummyProducts = [
+  //   { id: 1, name: "Samsung Galaxy A16 8/128GB - Gray", price: 2759000, category: "Smartphone", sales: "10RB+", rating: 4.9, image: "https://via.placeholder.com/200" },
+  //   { id: 2, name: "Samsung Galaxy Buds Pro - Black", price: 799000, category: "Accessories", sales: "1RB+", rating: 4.9, image: "https://via.placeholder.com/200" },
+  //   { id: 3, name: "Crystal UHD 4K TV 43 Inch", price: 3309000, category: "Electronics", sales: "3RB+", rating: 4.9, image: "https://via.placeholder.com/200" },
+  // ];
+
+  useEffect(() => {
+    const fetchShop = async () => {
+      try {
+        const res = await fetch(`/api/shops/${shopId}`);
+        const data = await res.json();
+        setShop(data.records);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    fetchShop();
+  }, [shopId]);
+
+  useEffect(() => {
+  const fetchProducts = async () => {
+      try {
+        const res = await fetch(`/api/products`);
+        const data = await res.json();
+
+        // filter berdasarkan shop_id
+        const filtered = data.records.filter(
+          (p: Product) => p.shop_id === shopId
+        );
+
+        setProducts(filtered);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    fetchProducts();
+  }, [shopId]);
+
+  const normalizedProducts = products.map((p: Product) => {
+    const totalSales = p.variants?.reduce((accVar, variant) => {
+      const variantSales = variant.orderItems?.reduce(
+        (accOrder, item) => accOrder + item.quantity,
+        0
+      ) || 0;
+
+      return accVar + variantSales;
+    }, 0) || 0;
+
+    return {
+      id: p.product_id,
+      name: p.name,
+      price: p.variants?.[0]?.price || 0,
+      category: p.category?.name,
+      rating:
+        p.ratings.length > 0
+          ? p.ratings.reduce((acc: number, r: Rating) => acc + r.value, 0) /
+            p.ratings.length
+          : 0,
+      sales: totalSales,
+      image: p.variants?.[0]?.picture,
+    };
+  });
+
+
+  
+  const categories = useMemo(() => {
+    const unique = new Set(
+      normalizedProducts
+        .map((p) => p.category)
+        .filter(Boolean)
+    );
+
+    return Array.from(unique);
+  }, [normalizedProducts]);
 
   const filteredAndSortedProducts = useMemo(() => {
     // 1. Filter berdasarkan Search Query & Kategori
-    const result = dummyProducts.filter((p) => {
+    const result = normalizedProducts.filter((p) => {
       const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesCategory = selectedCategory ? p.category === selectedCategory : true;
+      const matchesCategory = selectedCategory
+        ? (p.category || "").toLowerCase() === selectedCategory.toLowerCase()
+        : true;
       return matchesSearch && matchesCategory;
     });
 
     // 2. Sort berdasarkan sortValue
     return [...result].sort((a, b) => {
       switch (sortValue) {
-        case "terbaru":
-          return b.id - a.id;
+        // case "terbaru":
+        //   return b.id - a.id;
         case "terlaris":
-          return parseInt(b.sales) - parseInt(a.sales);
+          return b.sales - a.sales;
         case "harga-asc":
           return a.price - b.price;
         case "harga-desc":
@@ -84,7 +192,43 @@ export default function ShopProfile() {
           return b.rating - a.rating;
       }
     });
-  }, [searchQuery, sortValue, selectedCategory]);
+  }, [normalizedProducts, searchQuery, selectedCategory, sortValue]);
+
+  const totalProducts = useMemo(() => {
+    return products.length;
+  }, [products]);
+
+  const formatCount = (n: number) => {
+    if (n >= 1000) return (n / 1000).toFixed(1) + "RB";
+    return n;
+  };
+
+  const getJoinDuration = (dateString?: string) => {
+    if (!dateString) return "-";
+
+    const created = new Date(dateString);
+    const now = new Date();
+
+    const diffYears = now.getFullYear() - created.getFullYear();
+
+    if (diffYears > 0) return `${diffYears} Thn Lalu`;
+
+    const diffMonths =
+      (now.getMonth() + 12 * now.getFullYear()) -
+      (created.getMonth() + 12 * created.getFullYear());
+
+    if (diffMonths > 0) return `${diffMonths} Bulan Lalu`;
+
+    const diffDays = Math.floor(
+      (now.getTime() - created.getTime()) / (1000 * 60 * 60 * 24)
+    );
+
+    return `${diffDays} Hari Lalu`;
+  };
+
+  const joinLabel = useMemo(() => {
+    return getJoinDuration(shop?.createdAt);
+  }, [shop]);
 
   if (!shop) {
     return (
@@ -99,19 +243,6 @@ export default function ShopProfile() {
       </Container>
     );
   }
-
-  // --- COMPONENT: SEARCH BAR ---
-  const SearchBar = () => (
-    <Paper component="form" sx={{ p: '2px 4px', display: 'flex', alignItems: 'center', width: { xs: '100%', md: 300 }, bgcolor: '#f0f0f0', boxShadow: 'none' }}>
-      <InputBase
-        sx={{ ml: 1, flex: 1, fontSize: '0.9rem' }}
-        placeholder="Cari di toko ini..."
-        value={searchQuery}
-        onChange={(e) => setSearchQuery(e.target.value)}
-      />
-      <IconButton type="button" sx={{ p: '10px' }}><SearchIcon /></IconButton>
-    </Paper>
-  );
 
   // --- TAB 0: HALAMAN UTAMA ---
   const HalamanUtama = () => (
@@ -141,7 +272,7 @@ export default function ShopProfile() {
       {/* Kamu Mungkin Suka */}
       <Box>
         <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>Kamu Mungkin Suka</Typography>
-        <ProductGrid products={dummyProducts} />
+        <ProductGrid products={normalizedProducts} />
       </Box>
     </Stack>
   );
@@ -152,14 +283,64 @@ export default function ShopProfile() {
     <Grid container spacing={2}>
       {products.map((p) => (
         <Grid size={{ xs: 6, md: 2.4 }} key={p.id}>
-          <Card elevation={0} sx={{ border: '1px solid #eee', '&:hover': { borderColor: '#003f29', boxShadow: 1 } }}>
-            <CardMedia component="img" height="180" image={p.image} />
+          <Card
+            onClick={() => navigate(`/product/${p.id}`)}
+            elevation={0}
+            sx={{
+              border: '1px solid #eee',
+              borderRadius: 2,
+              overflow: 'hidden',
+              cursor: 'pointer',
+              transition: 'all 0.25s ease',
+              backgroundColor: '#fff',
+
+              '&:hover': {
+                borderColor: '#003f29',
+                transform: 'translateY(-4px)',
+                boxShadow: '0 8px 24px rgba(0, 0, 0, 0.12)',
+              },
+            }}
+          >
+            <Box sx={{ overflow: 'hidden' }}>
+              <CardMedia
+                component="img"
+                height="180"
+                image={p.image}
+                sx={{
+                  transition: 'transform 0.35s ease',
+                  '&:hover': {
+                    transform: 'scale(1.08)',
+                  },
+                }}
+              />
+            </Box>
+
             <CardContent sx={{ p: 1.5 }}>
-              <Typography variant="body2" sx={{ height: 40, overflow: 'hidden', mb: 1 }}>{p.name}</Typography>
-              <Typography variant="subtitle1" fontWeight="bold" color="#ee4d2d">Rp {p.price.toLocaleString('id-ID')}</Typography>
+              <Typography
+                variant="body2"
+                sx={{
+                  height: 40,
+                  overflow: 'hidden',
+                  mb: 1,
+                  display: '-webkit-box',
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: 'vertical',
+                }}
+              >
+                {p.name}
+              </Typography>
+
+              <Typography variant="subtitle1" fontWeight="bold" color="#ee4d2d">
+                {formatPrice(p.price)}
+              </Typography>
+
               <Stack direction="row" justifyContent="space-between" sx={{ mt: 1 }}>
-                <Typography variant="caption" color="text.secondary">⭐ {p.rating}</Typography>
-                <Typography variant="caption" color="text.secondary">{p.sales} terjual</Typography>
+                <Typography variant="caption" color="text.secondary">
+                  ⭐ {p.rating}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {p.sales} terjual
+                </Typography>
               </Stack>
             </CardContent>
           </Card>
@@ -183,9 +364,9 @@ export default function ShopProfile() {
                 <Typography variant="h5" fontWeight="bold">
                   {shop.name} {shop.is_approved && <VerifiedIcon sx={{ fontSize: 18, color: '#4caf50' }} />}
                 </Typography>
-                <Typography variant="caption" sx={{ opacity: 0.8 }}>Aktif 2 menit lalu</Typography>
+                {/* <Typography variant="caption" sx={{ opacity: 0.8 }}>Aktif 2 menit lalu</Typography> */}
                 <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
-                  <Button size="small" variant="outlined" startIcon={<AddIcon />} sx={{ color: 'white', borderColor: 'white', textTransform: 'none' }}>Ikuti</Button>
+                  {/* <Button size="small" variant="outlined" startIcon={<AddIcon />} sx={{ color: 'white', borderColor: 'white', textTransform: 'none' }}>Ikuti</Button> */}
                   <Button size="small" variant="outlined" startIcon={<ChatIcon />} sx={{ color: 'white', borderColor: 'white', textTransform: 'none' }}>Chat</Button>
                 </Stack>
               </Box>
@@ -194,14 +375,14 @@ export default function ShopProfile() {
             {/* Kanan: Statistik Ringkas */}
             <Grid container spacing={2} sx={{ maxWidth: 500 }}>
               {[
-                { label: 'Produk', val: '1,7RB' },
-                { label: 'Mengikuti', val: '0' },
-                { label: 'Performa Chat', val: '100%' },
-                { label: 'Pengikut', val: '3,1JT' },
-                { label: 'Penilaian', val: '4.9' },
-                { label: 'Bergabung', val: '8 Thn Lalu' },
+                { label: 'Produk', val: formatCount(totalProducts) },
+                // { label: 'Mengikuti', val: '0' },
+                // { label: 'Performa Chat', val: '100%' },
+                // { label: 'Pengikut', val: '3,1JT' },
+                // { label: 'Penilaian', val: '4.9' },
+                { label: 'Bergabung', val: joinLabel },
               ].map((stat, i) => (
-                <Grid size={{ xs: 4 }} key={i}>
+                <Grid size={{ xs: 20 }} key={i}>
                   <Typography variant="caption" sx={{ display: 'block', opacity: 0.7 }}>{stat.label}:</Typography>
                   <Typography variant="body2" fontWeight="bold" color="#ffeb3b">{stat.val}</Typography>
                 </Grid>
@@ -217,7 +398,14 @@ export default function ShopProfile() {
           <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" alignItems="center" sx={{ px: 2 }}>
             <Tabs
               value={tabValue}
-              onChange={(_, v) => setTabValue(v)}
+              onChange={(_, v) => {
+                setTabValue(v);
+
+                // reset filter saat keluar dari tab kategori
+                if (v !== 2) {
+                  setSelectedCategory(null);
+                }
+              }}
               TabIndicatorProps={{ sx: { bgcolor: '#003f29', height: 3 } }}
               sx={{ '& .MuiTab-root': { fontWeight: 'bold', color: '#555', '&.Mui-selected': { color: '#003f29' } } }}
             >
@@ -225,7 +413,12 @@ export default function ShopProfile() {
               <Tab label="Semua Produk" />
               <Tab label="Kategori" />
             </Tabs>
-            <Box sx={{ py: 1 }}><SearchBar /></Box>
+            <Box sx={{ py: 1 }}>
+              <SearchBar
+                searchQuery={searchQuery}
+                setSearchQuery={setSearchQuery}
+              />
+            </Box>
           </Stack>
         </Paper>
 
@@ -262,6 +455,12 @@ export default function ShopProfile() {
                 <Paper sx={{ p: 2 }}>
                   <Typography fontWeight="bold" gutterBottom>Semua Kategori</Typography>
                   <List>
+                    <ListItemButton
+                      selected={selectedCategory === null}
+                      onClick={() => setSelectedCategory(null)}
+                    >
+                      <ListItemText primary="Semua" />
+                    </ListItemButton>
                     {categories.map((cat) => (
                       <ListItemButton key={cat} selected={selectedCategory === cat} onClick={() => setSelectedCategory(cat)}>
                         <ListItemText primary={cat} primaryTypographyProps={{ fontSize: '0.9rem' }} />

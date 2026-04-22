@@ -14,9 +14,22 @@ import LocalShippingIcon from "@mui/icons-material/LocalShipping";
 import InventoryIcon from "@mui/icons-material/Inventory";
 import StarOutlineIcon from "@mui/icons-material/StarOutline";
 
+import { useEffect } from "react";
+import { fetchMyOrders } from "../../../store/orderSlice";
+import { useAppDispatch } from "../../../hooks/useAppDispatch";
+
 export default function ProfilePage() {
   const { userInfo } = useAppSelector((state) => state.auth);
+  const { orders } = useAppSelector((state) => state.order);  // ← tambah
+  const dispatch = useAppDispatch();  // ← tambah
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (userInfo) {
+      dispatch(fetchMyOrders('all'));
+    }
+  }, [userInfo, dispatch]);
+
 
   if (!userInfo) {
     return (
@@ -29,12 +42,12 @@ export default function ProfilePage() {
     );
   }
 
-    const stats = userInfo.orderStats || {
-      unpaid: 0,
-      processing: 0,
-      shipped: 0,
-      toReview: 0,
-    };
+  const stats = {
+    unpaid: orders.filter(o => o.status === 'pending').length,
+    processing: orders.filter(o => o.status === 'pending').length,
+    shipped: 0,  // backend belum punya status 'shipped', nanti update kalau sudah ada
+    toReview: orders.filter(o => o.status === 'completed').length,
+  };
 
   return (
     <Box
@@ -218,5 +231,3 @@ export default function ProfilePage() {
     </Box>
   );
 }
-
-

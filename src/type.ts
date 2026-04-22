@@ -5,7 +5,57 @@ export type BasicMenuProps = {
     onSelect?: (value: string) => void;
 }
 
+export type Shop = {
+    shop_id: string
+    name: string
+}
+
+export type Product = {
+    product_id: string
+    shop_id: string
+    category_id: string
+    name: string
+    description: string
+    view_count: number
+    ratings?: Rating[]
+    variants?: ProductVariant[]
+    category?: Category
+    shop?: ShopInfo
+}
+
+export type ProductVariant = {
+    variant_id: string
+    product_id: string
+    name: string
+    picture: string
+    stock: number
+    price: number
+    orderItems?: OrderItems[]
+}
+
+export type OrderItems = {
+    order_id: string
+    variant_id: string
+    quantity: number
+}
+
+export type Rating = {
+    user_id: string
+    rating_id: string
+    product_id: string
+    value: number
+    title: string
+    description: string
+    picture?: string
+    createdAt: string
+    user?: {
+        first_name: string
+        last_name: string
+    }
+}
+
 export type UserInfo = {
+    token?: string;
     user_id: string
     first_name: string
     last_name: string
@@ -110,7 +160,7 @@ export type ShopInfo = {
     status: "active" | "suspended"
 
     owner?: UserInfo
-    products?: any[] // ntr diganti pake type  Product. blom ada soalnya
+    products?: Product // ntr diganti pake type  Product. blom ada soalnya
     createdAt?: string
     updatedAt?: string
 }
@@ -122,5 +172,73 @@ export type Category = {
     parent_id?: string | null;
     totalProducts?: number
 };
+
+export type CartItem = {
+    user_id: string;
+    variant_id: string;
+    quantity: number;
+    is_selected: boolean;
+    variant: {
+        variant_id: string;
+        name: string;
+        price: string;
+        picture: string;
+        product: {
+            name: string;
+            shop: {
+                name: string;
+            }
+        }
+    }
+}
+
+export type OrderItem = {
+    order_id: string;
+    variant_id: string;
+    quantity: number;
+}
+
+export type Order = {
+    order_id: string;
+    customer_id: string;
+    shop_id: string;
+    address_id: string;
+    status: "pending" | "completed" | "cancelled";
+    amount_paid: number;
+    orderItems?: OrderItem[];
+    createdAt?: string;
+    updatedAt?: string;
+}
+
+export type OrderDetail = {
+    order_id: string
+    customer_id: string
+    shop_id: string
+    address_id: string
+    status: "pending" | "completed" | "cancelled"
+    amount_paid: number
+    createdAt: string
+    updatedAt: string
+    address: Address
+    shop: {
+        shop_id: string
+        name: string
+        profile_pic?: string
+    }
+    orderItems: {
+        order_id: string
+        variant_id: string
+        quantity: number
+        variant: {
+            variant_id: string
+            name: string
+            price: string
+            picture: string
+            product: {
+                name: string
+            }
+        }
+    }[]
+}
 
 export type AsyncDataState = 'idle' | 'loading' | 'fulfilled' | 'error'

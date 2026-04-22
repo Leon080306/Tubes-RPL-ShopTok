@@ -52,7 +52,21 @@ export default function LoginPage() {
       localStorage.setItem("isLoggedIn", "true");
 
       alert(`Welcome back, ${data.user.first_name}!`);
-      navigate("/");
+      dispatch(authActions.setUserInfo(data.user));
+      localStorage.setItem("isLoggedIn", "true");
+
+      // ─── Redirect logic ───────────────────────────────────────
+      if (data.user.role === "seller") {
+        const shopRes = await fetch(`/api/shops/user/${data.user.user_id}`);
+
+        if (shopRes.status === 404) {
+          navigate("/create-shop");
+        } else {
+          navigate("/shop/dashboard");
+        }
+      } else {
+        navigate("/");
+      }
 
     } catch (error) {
       console.error(error);
