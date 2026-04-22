@@ -14,13 +14,39 @@ import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import AddIcon from "@mui/icons-material/Add";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import type { Address } from "../../../type";
+import { useEffect, useState } from "react";
 
 export default function SettingAddress() {
   const navigate = useNavigate();
-
   const { userInfo } = useAppSelector((state) => state.auth);
+  const [addresses, setAddresses] = useState<Address[]>([]);
 
-  const addresses = userInfo?.addresses || [];
+
+  const getAddresses = async () => {
+    try {
+      const userId = userInfo?.user_id;
+
+      const response = await fetch(`/api/address/${userId}`, {
+        method: "GET",
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch addresses");
+      }
+
+      const data = await response.json();
+      setAddresses(data); // ⭐ penting
+    } catch (error) {
+      console.error("Error fetching addresses:", error);
+    }
+  };
+
+  useEffect(() => {
+    if (!userInfo?.user_id) return;
+    getAddresses();
+  }, [userInfo]);
 
   return (
     <Box
@@ -92,7 +118,7 @@ export default function SettingAddress() {
                   </Typography>
 
                   <Typography variant="body2" sx={{ color: "#555" }}>
-                    {addr.subdistrict}, {addr.city},{" "}
+                    {addr.sub_district}, {addr.city},{" "}
                     {addr.province}
                   </Typography>
 

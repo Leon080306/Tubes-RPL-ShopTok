@@ -3,6 +3,7 @@ import {
   AppBar,
   Box,
   Button,
+  CircularProgress,
   InputAdornment,
   Paper,
   Rating,
@@ -24,6 +25,7 @@ import { useAppSelector } from "../hooks/useAppSelector";
 // import { useAppDispatch } from "../hooks/useAppDispatch";
 // import { authActions } from "../store/authSlice";
 import { useNavigate } from "react-router";
+import type { Category } from "../type";
 // import { Avatar, Menu, MenuItem } from "@mui/material";
 
 interface BackendVariant {
@@ -75,71 +77,19 @@ export function Layout() {
   const [selectedCategory, setSelectedCategory] = useState("Categories");
   const [search, setSearch] = useState("");
 
-  const [allProducts, setAllProducts] = useState<SearchProduct[]>([]);
-
   // const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const { userInfo } = useAppSelector((state) => state.auth);
 
-  useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        const res = await fetch("/api/products");
-        if (!res.ok) return;
-        const data = await res.json();
-        const raw: BackendProduct[] = Array.isArray(data.records) ? data.records : [];
-        setAllProducts(raw.map(adaptToSearchProduct));
-      } catch (err) {
-        console.error("Failed to fetch products for search:", err);
-      }
-    };
-    fetchProducts();
-  }, []);
-
-    const searchResults = useMemo(() => {
-      const q = search.trim().toLowerCase();
-      if (!q) return [];
-      return allProducts
-        .filter((p) => p.name.toLowerCase().includes(q))
-        .slice(0, 5);
-    }, [search, allProducts]);
+  useEffect(() => { }, [search]);
 
   const handleProfileNavigation = () => {
-    navigate("/profile")
+    if (userInfo?.role === "customer") {
+      navigate("/profile")
+    } else {
+      navigate("/shop/dashboard")
+    }
   };
-
-  const categories = [
-    {
-      name: "All Products",
-    },
-    {
-      name: "Electronics",
-    },
-    {
-      name: "Computers & Laptops",
-    },
-    {
-      name: "Phones & Tablets",
-    },
-    {
-      name: "Accessories",
-    },
-    {
-      name: "Home & Living",
-    },
-    {
-      name: "Fashion",
-    },
-    {
-      name: "Books",
-    },
-    {
-      name: "Sports",
-    },
-    {
-      name: "Health & Beauty",
-    },
-  ];
 
   const products = [
     {
@@ -174,11 +124,14 @@ export function Layout() {
     },
   ];
 
-  const handleCategorySelect = (category: string) => {
-    setSelectedCategory(category);
-  };
+  const handleCategorySelect = (categoryName: string) => {
+    const selected = categories.find((c) => c.name === categoryName);
 
-  console.log("ISI USER INFO:", userInfo);
+    if (!selected) return;
+
+    setSelectedCategory(selected.name);
+    navigate(`/products?category=${selected.name}`);
+  };
 
   return (
     <Stack>
@@ -253,12 +206,18 @@ export function Layout() {
                 <Link className="nav-link" to="/">
                   Home
                 </Link>
-                <Link className="nav-link" to="/">
+                <Link className="nav-link" to="/products">
                   Products
                 </Link>
-                <Link className="nav-link" to="/">
-                  Orders
-                </Link>
+                {userInfo?.role === "customer" ? (
+                  <Link className="nav-link" to="/orders">
+                    Orders
+                  </Link>
+                ) : (
+                  <Link className="nav-link" to="/shop/dashboard">
+                    Shop
+                  </Link>
+                )}
               </Box>
             </nav>
           </Box>
@@ -291,7 +250,16 @@ export function Layout() {
                   setSearchFocused(true);
                 }}
                 onBlur={() => {
-                  setSearchFocused(false);
+                  // NEVER close immediately - wait 300ms
+                  setTimeout(() => {
+                    setSearchFocused(false);
+                  }, 150);
+                }}
+                onKeyDown={(e) => {                                          // ← add this
+                  if (e.key === "Enter" && search.trim()) {
+                    setSearchFocused(false);
+                    navigate(`/products?search=${encodeURIComponent(search.trim())}`);
+                  }
                 }}
                 InputProps={{
                   endAdornment: (
@@ -359,70 +327,132 @@ export function Layout() {
                       padding: "18px 12px",
                     }}
                   >
-                    {search.trim() === "" ? (
-                      <>
-                        {/* Popular Categories — tidak berubah */}
-                        <h2 style={{ fontSize: "18px", margin: "0", marginBottom: "16px", paddingBottom: "12px", borderBottom: "1px solid rgba(0, 0, 0, 0.2)" }}>
-                          Popular Categories
-                        </h2>
-                        <Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 2 }}>
-                          {categories.map((category) => (
-                            <Paper
-                              key={category.name}
-                              elevation={0}
-                              onClick={() => {}}
-                              sx={{
-                                display: "flex", gap: "18px", alignItems: "center",
-                                backgroundColor: "#f6f6f6", borderRadius: "12px",
-                                padding: "12px", transition: "all 0.25s ease", cursor: "pointer",
-                                "&:hover": { transform: "scale(1.02)", boxShadow: 5 },
-                              }}
-                            >
-                              <img src={AppLogoOnly} style={{ width: "60px", height: "60px", borderRadius: "6px" }} alt="" />
-                              <Box sx={{ display: "flex", flexDirection: "column", justifyContent: "space-between", height: "50px", flexGrow: 1 }}>
-                                <Typography variant="subtitle1" sx={{ fontWeight: 600, lineHeight: 1.2 }}>
-                                  {category.name}
-                                </Typography>
-                                <Typography variant="body2" sx={{ color: "text.secondary", lineHeight: 1.2 }}>
-                                  12 products available
-                                </Typography>
-                              </Box>
-                            </Paper>
-                          ))}
-                        </Box>
-                      </>
-                    ) : searchResults.length === 0 ? (
-                      // ── Tidak ada hasil ──────────────────────────────────────────────────────
-                      <Box sx={{ py: 3, textAlign: "center" }}>
-                        <Typography sx={{ fontSize: "14px", color: "text.secondary" }}>
-                          No products found for "<strong>{search}</strong>"
-                        </Typography>
-                      </Box>
-                    ) : (
-                      // ── Hasil search dari backend ────────────────────────────────────────────
-                      <Box sx={{ display: "flex", flexDirection: "column" }}>
-                        {searchResults.map((product, index) => (
-                          <Box
-                            key={`${product.name}-${index}`}
-                            sx={{
-                              display: "flex", flexDirection: "row",
-                              justifyContent: "space-between", alignItems: "center",
-                              padding: "18px 12px",
-                              borderTop: index === 0 ? "none" : "1px solid rgba(0, 0, 0, 0.2)",
-                              cursor: "pointer",
-                              "&:hover": { backgroundColor: "#f9f9f9" },
-                              borderRadius: index === 0 ? "8px 8px 0 0" : 0,
+                    {
+                      search.trim() === "" ? (
+                        <>
+                          <h2
+                            style={{
+                              fontSize: "18px",
+                              margin: "0",
+                              marginBottom: "16px",
+                              paddingBottom: "12px",
+                              borderBottom: "1px solid rgba(0, 0, 0, 0.2)",
                             }}
                           >
-                            {/* Nama produk */}
-                            <Box sx={{ display: "flex", justifyContent: "start", alignItems: "center", gap: "18px" }}>
-                              <img
-                                src={AppLogoOnly}
-                                style={{ width: "60px", height: "60px", borderRadius: "6px" }}
-                                alt=""
-                              />
-                              <Typography sx={{ fontSize: "14px" }}>{product.name}</Typography>
-                            </Box>
+                            Popular Categories
+                          </h2>
+                          <Box
+                            sx={{
+                              display: "grid",
+                              gridTemplateColumns: "repeat(2, 1fr)",
+                              gap: 2,
+                            }}
+                          >
+                            {categories.map((category) => (
+                              <Paper
+                                key={category.name}
+                                elevation={0}
+                                onClick={() => { }}
+                                sx={{
+                                  display: "flex",
+                                  gap: "18px",
+                                  alignItems: "center",
+                                  backgroundColor: "#f6f6f6",
+                                  borderRadius: "12px",
+                                  padding: "12px",
+                                  transition: "all 0.25s ease",
+                                  cursor: "pointer",
+                                  "&:hover": {
+                                    transform: "scale(1.02)",
+                                    boxShadow: 5,
+                                  },
+                                }}
+                              >
+                                <img
+                                  src={AppLogoOnly}
+                                  style={{
+                                    width: "60px",
+                                    height: "60px",
+                                    borderRadius: "6px",
+                                  }}
+                                  alt=""
+                                />
+                                <Box
+                                  sx={{
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    justifyContent: "space-between",
+                                    height: "50px",
+                                    flexGrow: 1,
+                                  }}
+                                >
+                                  <Typography
+                                    variant="subtitle1"
+                                    sx={{ fontWeight: 600, lineHeight: 1.2 }}
+                                  >
+                                    {category.name}
+                                  </Typography>
+
+                                  <Typography
+                                    variant="body2"
+                                    sx={{
+                                      color: "text.secondary",
+                                      lineHeight: 1.2,
+                                    }}
+                                  >
+                                    12 products available
+                                  </Typography>
+                                </Box>
+                              </Paper>
+                            ))}
+                          </Box>
+                        </>
+                      ) : (
+                        <Box
+                          sx={{
+                            display: "flex",
+                            flexDirection: "column",
+                          }}
+                        >
+                          {products.map((product, index) => (
+                            <Box
+                              sx={{
+                                display: "flex",
+                                flexDirection: "row",
+                                justifyContent: "space-between",
+                                alignItems: "center",
+                                padding: "18px 12px",
+                                borderTop:
+                                  index === 0
+                                    ? "none"
+                                    : "1px solid rgba(0, 0, 0, 0.2)",
+                              }}
+                            >
+                              <Box
+                                sx={{
+                                  display: "flex",
+                                  justifyContent: "start",
+                                  alignItems: "center",
+                                  gap: "18px",
+                                }}
+                              >
+                                <img
+                                  src={AppLogoOnly}
+                                  style={{
+                                    width: "60px",
+                                    height: "60px",
+                                    borderRadius: "6px",
+                                  }}
+                                  alt=""
+                                />
+                                <Typography
+                                  sx={{
+                                    fontSize: "14px",
+                                  }}
+                                >
+                                  {product.name}
+                                </Typography>
+                              </Box>
 
                             {/* Rating */}
                             <Box sx={{ display: "flex", alignItems: "center", gap: "8px" }}>
@@ -519,7 +549,5 @@ export function Layout() {
       </Box>
     </Stack>
   );
-
-  console.log(userInfo)
 
 }

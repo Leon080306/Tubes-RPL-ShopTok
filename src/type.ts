@@ -60,7 +60,6 @@ export type Rating = {
 }
 
 export type UserInfo = {
-    token?: string;
     user_id: string
     first_name: string
     last_name: string
@@ -92,16 +91,32 @@ export type OrderStats = {
 }
 
 // ni buat setting addressnya
+// Internal form state (UI-facing)
+export type AddressFormState = {
+    id: string;
+    name: string;        // address label/nickname
+    receiver: string;    // maps to full_name
+    phone: string;       // maps to phone_number
+    province: string;
+    city: string;
+    district: string;    // maps to sub_district
+    postalCode: string;
+    fullAddress: string; // maps to address
+    isDefault: boolean;
+};
+
+// API/DB shape
 export type Address = {
-    address_id: string
-    user_id: string
-    full_name: string
-    address: string
-    province: string
-    city: string
-    subdistrict: string
-    is_default: boolean
-}
+    address_id?: string;
+    user_id?: string;
+    full_name: string;
+    address: string;
+    province: string;
+    city: string;
+    sub_district: string;
+    phone_number: string;
+    is_default: boolean;
+};
 
 export type CreditCard = {
     id: string
@@ -124,26 +139,25 @@ export type AuthState = {
 }
 
 export type ChatMessage = {
-    chat_id: number
-    sender_role: 'customer' | 'seller'
-    message: string
-    created_at: string 
-}
+    chat_id: string;       // UUID
+    sender_role: string;
+    message: string;
+    created_at: string;
+};
 
 export type ChatSession = {
-    shop_id: number
-    shop_name: string
-    shop_logo?: string
-    last_message: string
-    unread_count: number
-    messages: ChatMessage[]
-}
+    shop_id: string;       // UUID
+    shop_name: string;
+    last_message: string;
+    unread_count: number;
+    messages: ChatMessage[];
+};
 
 export type ShopInfo = {
-    shop_id: string      
+    shop_id: string
     owner_id: string
     name: string
-    description?: string 
+    description?: string
     profile_pic?: string
     banner?: string
     is_approved: boolean
@@ -151,6 +165,9 @@ export type ShopInfo = {
     
     owner?: UserInfo 
     products?: Product // ntr diganti pake type  Product. blom ada soalnya
+
+    owner?: UserInfo
+    products?: any[] // ntr diganti pake type  Product. blom ada soalnya
     createdAt?: string
     updatedAt?: string
 }

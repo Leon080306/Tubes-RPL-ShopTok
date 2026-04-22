@@ -10,11 +10,12 @@ import {
   Radio,
   Link as MuiLink,
 } from "@mui/material";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import PersonIcon from "@mui/icons-material/Person";
 import StorefrontIcon from "@mui/icons-material/Storefront";
 import { useNavigate } from "react-router";
+import { useRadioGroup } from "@mui/material";
 
 export default function RegisterPage() {
   const [role, setRole] = useState("customer");
@@ -32,7 +33,7 @@ export default function RegisterPage() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (formData.password.length < 8) {
@@ -40,25 +41,42 @@ export default function RegisterPage() {
       return;
     }
 
-    const userData = {
-      user_id: crypto.randomUUID(), 
-      first_name: formData.firstName, 
-      last_name: formData.lastName, 
-      email: formData.email,
-      phone_number: formData.phoneNumber,
-      password: formData.password,
-      role: role,
-      shopTok_pay: 0,
-      coins: 0,
-      vouchers: 0,
-    };
+    try {
+      const response = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          first_name: formData.firstName,
+          last_name: formData.lastName,
+          email: formData.email,
+          phone_number: formData.phoneNumber,
+          rawPassword: formData.password,
+          role: role,
+        }),
+      });
 
-    localStorage.setItem("user_data", JSON.stringify(userData));
+      const data = await response.json();
 
-    console.log("Coba cek sign up ", { ...formData, role });
-    alert(`Berhasil sign up (ntr diganti biar lbh bagus hehe)`);
-    navigate("/login");
+      if (!response.ok) {
+        alert(data.message || "Register failed");
+        return;
+      }
+
+      alert("Register successful!");
+      navigate("/login");
+
+    } catch (error) {
+      console.error(error);
+      alert("Register error");
+    }
   };
+
+  useEffect(() => {
+    console.log("role updated:", role);
+  }, [role]);
 
   return (
     <Box
@@ -105,20 +123,20 @@ export default function RegisterPage() {
           <RadioGroup
             row
             value={role}
-            onChange={(e) => setRole(e.target.value)}
+            onChange={(e) => {
+              setRole(e.target.value)
+            }}
             sx={{ justifyContent: "center", gap: 2, mb: 2 }}
           >
             <RoleCard
               value="customer"
               label="Customer"
               icon={<PersonIcon sx={{ fontSize: 32 }} />}
-              active={role === "customer"}
             />
             <RoleCard
               value="seller"
               label="Seller"
               icon={<StorefrontIcon sx={{ fontSize: 32 }} />}
-              active={role === "seller"}
             />
           </RadioGroup>
 
@@ -208,17 +226,19 @@ export default function RegisterPage() {
   );
 }
 
+
 function RoleCard({
   value,
   label,
   icon,
-  active,
 }: {
   value: string;
   label: string;
-  icon: any;
-  active: boolean;
+  icon: React.ReactNode;
 }) {
+  const radioGroup = useRadioGroup();
+  const checked = radioGroup?.value === value;
+
   return (
     <FormControlLabel
       value={value}
@@ -234,9 +254,9 @@ function RoleCard({
             height: 100,
             borderRadius: 3,
             border: "2px solid",
-            borderColor: active ? "#16a34a" : "#e0e0e0",
-            backgroundColor: active ? "#f0fdf4" : "transparent",
-            color: active ? "#16a34a" : "#666",
+            borderColor: checked ? "#16a34a" : "#e0e0e0",
+            backgroundColor: checked ? "#f0fdf4" : "transparent",
+            color: checked ? "#16a34a" : "#666",
             transition: "all 0.3s ease",
             cursor: "pointer",
             "&:hover": { borderColor: "#16a34a" },

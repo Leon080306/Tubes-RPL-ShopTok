@@ -30,15 +30,11 @@ export default function SettingSecurity() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
 
-  const handleChangePassword = (e: React.FormEvent) => {
+  const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setSuccess(false);
 
-    if (passwords.old !== userInfo?.password) {
-      setError("Password lama salah!");
-      return;
-    }
     if (passwords.new !== passwords.confirm) {
       setError("Password tidak cocok!");
       return;
@@ -48,19 +44,48 @@ export default function SettingSecurity() {
       return;
     }
 
-    dispatch(authActions.changePassword(passwords.new));
-    setSuccess(true);
-    setPasswords({ old: "", new: "", confirm: "" });
+    try {
+      const response = await fetch(`/api/user/${userInfo?.user_id}/change-password`, {
+        method: "PUT",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          oldPassword: passwords.old,
+          newPassword: passwords.new,
+        }),
+      });
+
+      if (response.status === 400) {
+        setError("Password lama salah!");
+        return;
+      }
+
+      if (!response.ok) throw new Error("Failed to change password");
+
+      setSuccess(true);
+      setPasswords({ old: "", new: "", confirm: "" });
+    } catch (error) {
+      console.error("Error changing password:", error);
+      setError("Gagal mengubah password, coba lagi");
+    }
   };
 
-  const handleDeleteAccount = () => {
-    if (
-      window.confirm(
-        "Apakah Anda yakin ingin menghapus akun?",
-      )
-    ) {
-      dispatch(authActions.deleteAccount());
+  const handleDeleteAccount = async () => {
+    if (!window.confirm("Apakah Anda yakin ingin menghapus akun?")) return;
+
+    try {
+      const response = await fetch(`/api/user/${userInfo?.user_id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+
+      if (!response.ok) throw new Error("Failed to delete account");
+
+      dispatch(authActions.logout());
       navigate("/login");
+    } catch (error) {
+      console.error("Error deleting account:", error);
+      alert("Gagal menghapus akun, coba lagi");
     }
   };
 

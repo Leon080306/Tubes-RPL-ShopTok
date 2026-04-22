@@ -32,13 +32,29 @@ export default function EditProfilePage() {
     })
   }
 
-  const handleSave = () => {
-    dispatch(authActions.updateProfile(formData))
+  const handleSave = async () => {
+    try {
+      const response = await fetch(`/api/user/${userInfo?.user_id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          first_name: formData.firstName,
+          last_name: formData.lastName,
+          email: formData.email,
+        }),
+      });
 
-    alert("Profile updated successfully!")
+      if (!response.ok) throw new Error("Failed to update profile");
 
-    navigate("/profile")
-  }
+      const updated = await response.json();
+      dispatch(authActions.updateProfile(updated));
+      navigate("/profile");
+    } catch (error) {
+      console.error(error);
+      alert("Failed to update profile");
+    }
+  };
 
   return (
     <Box sx={{ maxWidth: "500px", margin: "40px auto" }}>
