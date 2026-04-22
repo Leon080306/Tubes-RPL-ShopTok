@@ -7,6 +7,9 @@ const HomePage = lazy(() => import("../pages/HomePage"));
 const RegisterPage = lazy(() => import("../pages/Login&SignUp/RegisterPage"));
 const LoginPage = lazy(() => import("../pages/Login&SignUp/LoginPage"));
 
+const ForgotPasswordPage = lazy(() => import("../pages/Login&SignUp/ForgotPasswordPage"));
+const ResetPasswordPage = lazy(() => import("../pages/Login&SignUp/ResetPasswordPage"));
+
 const ProfilePage = lazy(() => import("../pages/Account/Profile/ProfilePage"));
 const EditProfilePage = lazy(() => import("../pages/Account/Profile/EditProfilePage"));
 
@@ -46,6 +49,8 @@ export const AppRoutes = () => {
         <Route path="/" element={<HomePage />} />
         <Route path="/signup" element={<RegisterPage />} />
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
 
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/profile/edit" element={<EditProfilePage />} />

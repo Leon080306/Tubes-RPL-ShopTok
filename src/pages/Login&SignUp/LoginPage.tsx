@@ -149,6 +149,20 @@ export default function LoginPage() {
               Sign Up
             </MuiLink>
           </Typography>
+
+          <MuiLink
+            component={Link}
+            to="/forgot-password"
+            sx={{
+              color: "#16a34a",
+              fontWeight: "bold",
+              textDecoration: "none",
+              width: "100%",
+              textAlign: "center",
+            }}
+          >
+            Forgot Password
+          </MuiLink>
         </Box>
       </Card>
     </Box>

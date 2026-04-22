@@ -65,32 +65,29 @@ function MapController({ position }: { position: [number, number] }) {
   return null;
 }
 
+// In LocationMarker, rename the prop for clarity
 function LocationMarker({
   setPosition,
-  setParsedAddress
+  onAddressParsed  // renamed
 }: {
   setPosition: (pos: [number, number]) => void;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  setParsedAddress: (addr: any) => void;
+  onAddressParsed: (addr: AddressFormState) => void;
 }) {
   useMapEvents({
     async click(e) {
       const { lat, lng } = e.latlng;
-
       setPosition([lat, lng]);
 
       const res = await fetch(
         `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`
       );
-
       const data = await res.json();
-      setParsedAddress(parseAddress(data));
+      onAddressParsed(parseAddress(data));
     }
   });
 
   return null;
 }
-
 
 export default function AddressForm({ initialData, onSubmit, onBack, title }: AddressFormProps) {
   const [formData, setFormData] = useState<AddressFormState>(
@@ -152,7 +149,14 @@ export default function AddressForm({ initialData, onSubmit, onBack, title }: Ad
       const data = await res.json();
       const parsed = parseAddress(data);
 
-      setFormData(parsed);
+      setFormData((prev) => ({
+        ...prev,
+        province: parsed.province,
+        city: parsed.city,
+        district: parsed.district,
+        postalCode: parsed.postalCode,
+        fullAddress: parsed.fullAddress,
+      }));
     });
   };
 
@@ -203,7 +207,16 @@ export default function AddressForm({ initialData, onSubmit, onBack, title }: Ad
 
               <LocationMarker
                 setPosition={setPosition}
-                setParsedAddress={setFormData}
+                onAddressParsed={(parsed) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    province: parsed.province,
+                    city: parsed.city,
+                    district: parsed.district,
+                    postalCode: parsed.postalCode,
+                    fullAddress: parsed.fullAddress,
+                  }))
+                }
               />
 
               <MapController position={position} />

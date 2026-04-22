@@ -4,6 +4,7 @@ import { authActions } from "../../../store/authSlice";
 import AddressForm from "../../../components/AddressForm";
 import type { AddressFormState, Address } from "../../../type";
 import { useEffect, useState } from "react";
+import { useAppSelector } from "../../../hooks/useAppSelector";
 
 export default function AddressEditPage() {
   const { id } = useParams();
@@ -12,6 +13,7 @@ export default function AddressEditPage() {
 
   const [initialFormState, setInitialFormState] = useState<AddressFormState | null>(null);
   const [addressId, setAddressId] = useState<string>("");
+  const { userInfo } = useAppSelector((state) => state.auth);
 
   useEffect(() => {
     if (!id) return;
@@ -49,7 +51,10 @@ export default function AddressEditPage() {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             credentials: "include",
-            body: JSON.stringify(updatedData),
+            body: JSON.stringify({
+              user_id: userInfo?.user_id, // add this
+              ...updatedData,
+            }),
           });
 
           if (!response.ok) throw new Error("Failed to update address");
