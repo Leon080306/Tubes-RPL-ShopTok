@@ -10,6 +10,7 @@ export type Category = {
 }
 
 export type UserInfo = {
+    token?: string;
     first_name: string
     last_name: string
     email: string
@@ -101,6 +102,25 @@ export type ShopInfo = {
     products?: any[] // ntr diganti pake type  Product. blom ada soalnya
     createdAt?: string
     updatedAt?: string
+}
+
+export type CartItem = {
+    user_id: string;
+    variant_id: string;
+    quantity: number;
+    is_selected: boolean;
+    variant: {
+        variant_id: string;
+        name: string;
+        price: string; 
+        picture: string;
+        product: {
+            name: string;
+            shop: {
+                name: string;
+            }
+        }
+    }
 }
 
 export type AsyncDataState = 'idle' | 'loading' | 'fulfilled' | 'error'
