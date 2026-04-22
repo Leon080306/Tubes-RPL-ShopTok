@@ -22,12 +22,30 @@ import banner2 from "../assets/stock-images/home-bannerHandphone.jpg";
 import { useState } from "react";
 import { useNavigate } from "react-router";
 
+import { useEffect } from "react";
+import { useAppDispatch } from "../hooks/useAppDispatch";
+import { useAppSelector } from "../hooks/useAppSelector";
+import { fetchWishlist, toggleWishlist } from "../store/wishlistSlice";
+import FavoriteIcon from "@mui/icons-material/Favorite";
+
 export default function Homepage() {
     const [rating, setRating] = useState<number | null>(null);
     const [sortPrice, setSortPrice] = useState<"high" | "low" | "">("");
     const [sortRating, setSortRating] = useState<"high" | "low" | "">("");
 
     const navigate = useNavigate();
+
+    const dispatch = useAppDispatch();
+    const { wishlistedIds } = useAppSelector(state => state.wishlist);
+
+    useEffect(() => {
+        dispatch(fetchWishlist());
+    }, [dispatch]);
+
+    const handleToggleWishlist = (e: React.MouseEvent, product_id: string) => {
+        e.stopPropagation();
+        dispatch(toggleWishlist(product_id));
+    };
 
     const dummy = [
         {
@@ -437,29 +455,23 @@ export default function Homepage() {
                                 mb: 2,
                             }}
                         >
-                            <IconButton
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    // masukkin fungsi like di sini
-                                }}
-                                sx={{
-                                    position: "absolute",
-                                    top: 8,
-                                    right: 8,
-                                    zIndex: 10,
-                                    backgroundColor: "white",
-                                    width: 30,
-                                    height: 30,
-                                    boxShadow: "0 2px 6px rgba(0, 0, 0, 0.35)",
-                                    "&:hover": {
-                                        color: "rgba(255, 0, 0, 0.79)",
-                                        backgroundColor: "white",
-                                        scale: 1.15,
-                                    },
-                                }}
-                            >
-                                ❤
-                            </IconButton>
+                            // Ganti IconButton ❤ yang lama dengan ini:
+                        <IconButton
+                            onClick={(e) => handleToggleWishlist(e, String(product.id))}
+                            sx={{
+                                position: "absolute",
+                                top: 8, right: 8, zIndex: 10,
+                                backgroundColor: "white",
+                                width: 30, height: 30,
+                                boxShadow: "0 2px 6px rgba(0, 0, 0, 0.35)",
+                                color: wishlistedIds.includes(String(product.id)) 
+                                    ? "rgba(255, 0, 0, 0.79)" 
+                                    : "#ccc",
+                                "&:hover": { backgroundColor: "white", scale: 1.15 },
+                            }}
+                        >
+                            <FavoriteIcon sx={{ fontSize: 16 }} />
+                        </IconButton>
 
                             <Box
                                 component="img"

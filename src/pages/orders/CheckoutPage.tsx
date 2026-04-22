@@ -1,28 +1,51 @@
-import React from "react";
-import {
-    Box,
-    Container,
-    Typography,
-    TextField,
-    Button,
-    Radio,
-    RadioGroup,
-    FormControlLabel,
-    Checkbox,
-    Divider,
-    InputLabel,
-    InputAdornment,
-    Breadcrumbs,
-    Link,
-} from "@mui/material";
+import React, { useState } from "react";
+import { Box, Container, Typography, TextField, Button, Radio, RadioGroup, FormControlLabel, Checkbox, Divider, InputLabel, InputAdornment, Breadcrumbs, Link, } from "@mui/material";
 
 import { useNavigate } from "react-router";
 import HomeIcon from "@mui/icons-material/Home";
 import CreditCardIcon from "@mui/icons-material/CreditCard";
 
+// redux
+import { useAppDispatch } from "../../hooks/useAppDispatch";
+import { useAppSelector } from "../../hooks/useAppSelector";
+import { checkoutOrder } from "../../store/orderSlice";
+
 export default function CheckoutPage() {
     const [isReturningCustomer, setIsReturningCustomer] = React.useState(false);
+    const dispatch = useAppDispatch();
     const navigate = useNavigate();
+
+    // Ambil cart items yang is_selected === true
+    const { items, total_payment } = useAppSelector(state => state.cart);
+    const selectedItems = items.filter(item => item.is_selected);
+
+    // Ambil addresses dari user
+    const userInfo = useAppSelector(state => state.auth.userInfo);
+    const addresses = userInfo?.addresses ?? [];
+    const defaultAddress = addresses.find(a => a.is_default) ?? addresses[0];
+
+    const [selectedAddressId, setSelectedAddressId] = useState<string>(
+        defaultAddress?.address_id?.toString() ?? ""
+    );
+    const [voucherCode, setVoucherCode] = useState("");
+
+    const handleCheckout = async () => {
+        if (!selectedAddressId) {
+            alert("Pilih alamat pengiriman dulu!");
+            return;
+        }
+        const result = await dispatch(checkoutOrder({
+            address_id: selectedAddressId,
+            // voucher_id: voucherCode || undefined,
+        }));
+
+        if (checkoutOrder.fulfilled.match(result)) {
+            alert("Checkout berhasil!");
+            navigate("/orders");
+        } else {
+            alert("Checkout gagal: " + (result.payload as any)?.message);
+        }
+    };
 
     const border = "#E5E5E5";
     const green = "#0B5D3B";
@@ -35,6 +58,10 @@ export default function CheckoutPage() {
             borderRadius: "6px",
         },
     };
+
+    function formatPrice(total_payment: number): React.ReactNode {
+        throw new Error("Function not implemented.");
+    }
 
     return (
         <Container maxWidth="lg" sx={{ py: 4 }}>
@@ -86,48 +113,31 @@ export default function CheckoutPage() {
 
                         <Box display="flex" justifyContent="space-between">
                             {/* LEFT ITEM */}
-                            <Box display="flex" gap={2}>
-                                <Box
-                                    sx={{
-                                        width: 110,
-                                        height: 110,
-                                        background: light,
-                                        borderRadius: 2,
-                                        display: "flex",
-                                        alignItems: "center",
-                                        justifyContent: "center",
-                                    }}
-                                >
-                                    <Box
-                                        component="img"
-                                        src="/src/assets/stock-images/airpod.webp"
-                                        sx={{
-                                            width: 80,
-                                            height: 80,
-                                            objectFit: "contain",
-                                        }}
-                                    />
+                            {selectedItems.map(item => (
+                                <Box key={item.variant_id} display="flex" justifyContent="space-between">
+                                    <Box display="flex" gap={2}>
+                                        <Box sx={{ width: 110, height: 110, background: light, borderRadius: 2 }}>
+                                            <Box component="img"
+                                                src={item.variant.picture || "/placeholder.png"}
+                                                sx={{ width: 80, height: 80, objectFit: "contain" }}
+                                            />
+                                        </Box>
+                                        <Box>
+                                            <Typography fontWeight={600}>{item.variant.product.name}</Typography>
+                                            <Typography fontSize={13} color="gray">{item.variant.name}</Typography>
+                                            <Typography fontSize={13} color="gray">
+                                                Toko: {item.variant.product.shop.name}
+                                            </Typography>
+                                        </Box>
+                                    </Box>
+                                    <Box textAlign="right">
+                                        <Typography fontWeight={600}>
+                                            {formatPrice(Number(item.variant.price))}
+                                        </Typography>
+                                        <Typography fontSize={13}>Quantity: {item.quantity}</Typography>
+                                    </Box>
                                 </Box>
-
-                                <Box>
-                                    <Typography fontWeight={600}>
-                                        Airpods- Max
-                                    </Typography>
-                                    <Typography fontSize={13} color="gray">
-                                        Color: white
-                                    </Typography>
-                                </Box>
-                            </Box>
-
-                            {/* RIGHT PRICE */}
-                            <Box textAlign="right">
-                                <Typography fontWeight={600}>
-                                    $549.00
-                                </Typography>
-                                <Typography fontSize={13}>
-                                    Quantity: 1
-                                </Typography>
-                            </Box>
+                            ))}
                         </Box>
                     </Box>
 
@@ -621,42 +631,10 @@ export default function CheckoutPage() {
                                     },
                                 }}
                             >
-                                Pay $494.10
+                                Pay {formatPrice(total_payment)}
                             </Button>
                         </Box>
                     </Box>
-                    {/* ===== PROMO CARD ===== */}
-                    {/* <Box
-                        mt={3}
-                        p={2}
-                        borderRadius={2}
-                        sx={{
-                            background: "#F4EDE4",
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 2,
-                        }}
-                    > */}
-                    {/* CARD IMAGE */}
-                    {/* <Box
-                            sx={{
-                                width: 60,
-                                height: 40,
-                                background: "#0B5D3B",
-                                borderRadius: 1,
-                            }}
-                        /> */}
-
-                    {/* TEXT */}
-                    {/* <Box>
-                            <Typography fontSize={14} fontWeight={600}>
-                                Earn 5% cash back on Shopcart
-                            </Typography>
-                            <Typography fontSize={12} color="#666">
-                                Learn More
-                            </Typography>
-                        </Box>
-                    </Box> */}
                 </Box>
             </Box>
         </Container>

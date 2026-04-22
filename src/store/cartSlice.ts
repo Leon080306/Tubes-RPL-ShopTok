@@ -3,7 +3,7 @@ import axios from 'axios';
 import { type CartItem, type AsyncDataState } from '../type';
 import type { RootState } from '../redux/store'; 
 
-const API_URL = "http://localhost:3000/cart";
+const API_URL = "/api/cart";
 
 export const fetchCart = createAsyncThunk('cart/fetchCart', async (_, { getState, rejectWithValue }) => {
     try {
