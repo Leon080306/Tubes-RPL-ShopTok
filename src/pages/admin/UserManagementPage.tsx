@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { useMemo, useState, useEffect } from "react";
 import {
   Box,
   Container,
@@ -22,154 +23,109 @@ import SortIcon from "@mui/icons-material/Sort";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import { useNavigate } from "react-router";
 
+type User = {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  role: string;
+  status: string;
+};
+
 export default function UserManagementPage() {
   const navigate = useNavigate();
   const themeColor = "#16a34a";
+
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const [search, setSearch] = useState("");
   const [selectedRole, setSelectedRole] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("");
   const [sortNama, setSortNama] = useState("");
 
-  const [users, setUsers] = useState([
-    {
-      id: "1",
-      name: "Andi Pratama",
-      email: "andi.pratama@example.com",
-      phone: "081234567890",
-      role: "admin",
-      status: "active",
-    },
-    {
-      id: "2",
-      name: "Budi Santoso",
-      email: "budi.santoso@example.com",
-      phone: "082345678901",
-      role: "customer",
-      status: "suspended",
-    },
-    {
-      id: "3",
-      name: "Citra Lestari",
-      email: "citra.lestari@example.com",
-      phone: "083456789012",
-      role: "seller",
-      status: "suspended",
-    },
-    {
-      id: "4",
-      name: "Dewi Anggraini",
-      email: "dewi.anggraini@example.com",
-      phone: "084567890123",
-      role: "customer",
-      status: "active",
-    },
-    {
-      id: "5",
-      name: "Eko Saputra",
-      email: "eko.saputra@example.com",
-      phone: "085678901234",
-      role: "seller",
-      status: "active",
-    },
-    {
-      id: "6",
-      name: "Fajar Nugroho",
-      email: "fajar.nugroho@example.com",
-      phone: "086789012345",
-      role: "customer",
-      status: "active",
-    },
-    {
-      id: "7",
-      name: "Gita Permata",
-      email: "gita.permata@example.com",
-      phone: "087890123456",
-      role: "seller",
-      status: "active",
-    },
-    {
-      id: "8",
-      name: "Hendra Wijaya",
-      email: "hendra.wijaya@example.com",
-      phone: "088901234567",
-      role: "customer",
-      status: "active",
-    },
-    {
-      id: "9",
-      name: "Indah Sari",
-      email: "indah.sari@example.com",
-      phone: "089012345678",
-      role: "seller",
-      status: "active",
-    },
-    {
-      id: "10",
-      name: "Joko Susilo",
-      email: "joko.susilo@example.com",
-      phone: "081112223334",
-      role: "customer",
-      status: "active",
-    },
-    {
-      id: "11",
-      name: "Kartika Putri",
-      email: "kartika.putri@example.com",
-      phone: "082223334445",
-      role: "seller",
-      status: "active",
-    },
-    {
-      id: "12",
-      name: "Lukman Hakim",
-      email: "lukman.hakim@example.com",
-      phone: "083334445556",
-      role: "customer",
-      status: "active",
-    },
-    {
-      id: "13",
-      name: "Maya Oktaviani",
-      email: "maya.oktaviani@example.com",
-      phone: "084445556667",
-      role: "seller",
-      status: "active",
-    },
-    {
-      id: "14",
-      name: "Nanda Prakoso",
-      email: "nanda.prakoso@example.com",
-      phone: "085556667778",
-      role: "customer",
-      status: "active",
-    },
-    {
-      id: "15",
-      name: "Putri Ayu",
-      email: "putri.ayu@example.com",
-      phone: "086667778889",
-      role: "seller",
-      status: "active",
-    },
-  ]);
+  /* ================= FETCH ================= */
+  const getUsers = async () => {
+    try {
+      const response = await fetch("/api/user", {
+        method: "GET",
+        credentials: "include",
+      });
+
+      if (!response.ok) throw new Error("Failed to fetch users");
+
+      const data = await response.json();
+
+      const mapped: User[] = data.records.map((u: any) => ({
+        id: String(u.user_id),
+        name: `${u.first_name} ${u.last_name}`,
+        email: u.email,
+        phone: u.phone_number,
+        role: u.role,
+        status: u.status ?? "active",
+      }));
+
+      setUsers(mapped);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    getUsers();
+  }, []);
+
+  /* ================= DELETE ================= */
+  const handleDelete = async (id: string) => {
+    if (!confirm("Yakin ingin menghapus user ini?")) return;
+
+    try {
+      const response = await fetch(`/api/user/${id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+
+      if (!response.ok) throw new Error("Failed to delete user");
+
+      setUsers((prev) => prev.filter((u) => u.id !== id));
+    } catch (error) {
+      console.error("Error deleting user:", error);
+      alert("Gagal menghapus user");
+    }
+  };
+
+  /* ================= UPDATE STATUS ================= */
+  const handleChangeStatus = async (id: string, newStatus: string) => {
+    try {
+      const response = await fetch(`/api/user/${id}`, {
+        method: "PUT",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus }),
+      });
+
+      if (!response.ok) throw new Error("Failed to update status");
+
+      setUsers((prev) =>
+        prev.map((user) =>
+          user.id === id ? { ...user, status: newStatus } : user
+        )
+      );
+    } catch (error) {
+      console.error("Error updating status:", error);
+      alert("Gagal mengubah status");
+    }
+  };
 
   /* ================= FILTER + SORT ================= */
   const filteredUsers = useMemo(() => {
     return users
       .filter((user) => {
-        const matchSearch = user.name
-          .toLowerCase()
-          .includes(search.toLowerCase());
-
-        const matchRole = selectedRole
-          ? user.role === selectedRole
-          : true;
-
-        const matchStatus = selectedStatus
-          ? user.status === selectedStatus
-          : true;
-
+        const matchSearch = user.name.toLowerCase().includes(search.toLowerCase());
+        const matchRole = selectedRole ? user.role === selectedRole : true;
+        const matchStatus = selectedStatus ? user.status === selectedStatus : true;
         return matchSearch && matchRole && matchStatus;
       })
       .sort((a, b) => {
@@ -179,18 +135,7 @@ export default function UserManagementPage() {
       });
   }, [users, search, selectedRole, selectedStatus, sortNama]);
 
-  const handleDelete = (id: string) => {
-    if (!confirm("Yakin ingin menghapus user ini?")) return;
-    setUsers((prev) => prev.filter((u) => u.id !== id));
-  };
-
-  const handleChangeStatus = (id: string, newStatus: string) => {
-    setUsers((prev) =>
-      prev.map((user) =>
-        user.id === id ? { ...user, status: newStatus } : user
-      )
-    );
-  };
+  if (loading) return <Box sx={{ p: 4 }}>Memuat data...</Box>;
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
@@ -213,7 +158,7 @@ export default function UserManagementPage() {
             bgcolor: themeColor,
             borderRadius: "10px",
             textTransform: "none",
-            height: "100%"
+            height: "100%",
           }}
         >
           Tambah User
@@ -222,7 +167,15 @@ export default function UserManagementPage() {
 
       {/* SEARCH */}
       <Box sx={{ mb: 3 }}>
-        <Box sx={{ display: "flex", alignItems: "center", px: 2, border: "1px solid #E0E0E0", borderRadius: "14px" }}>
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            px: 2,
+            border: "1px solid #E0E0E0",
+            borderRadius: "14px",
+          }}
+        >
           <SearchIcon sx={{ color: "#999", mr: 1 }} />
           <InputBase
             placeholder="Cari user..."
@@ -248,7 +201,7 @@ export default function UserManagementPage() {
           displayEmpty
           IconComponent={KeyboardArrowDownIcon}
         >
-          <MenuItem value="" sx={{color: "#515151b7"}}>Semua Role</MenuItem>
+          <MenuItem value="" sx={{ color: "#515151b7" }}>Semua Role</MenuItem>
           <MenuItem value="admin">Admin</MenuItem>
           <MenuItem value="customer">Customer</MenuItem>
           <MenuItem value="seller">Seller</MenuItem>
@@ -260,7 +213,7 @@ export default function UserManagementPage() {
           displayEmpty
           IconComponent={KeyboardArrowDownIcon}
         >
-          <MenuItem value="" sx={{color: "#515151b7"}}>Semua Status</MenuItem>
+          <MenuItem value="" sx={{ color: "#515151b7" }}>Semua Status</MenuItem>
           <MenuItem value="active">Active</MenuItem>
           <MenuItem value="suspended">Suspended</MenuItem>
         </Select>
@@ -271,7 +224,7 @@ export default function UserManagementPage() {
           displayEmpty
           IconComponent={SortIcon}
         >
-          <MenuItem value="" sx={{color: "#515151b7"}}>Urutkan Nama</MenuItem>
+          <MenuItem value="" sx={{ color: "#515151b7" }}>Urutkan Nama</MenuItem>
           <MenuItem value="asc">A-Z</MenuItem>
           <MenuItem value="desc">Z-A</MenuItem>
         </Select>
@@ -290,7 +243,6 @@ export default function UserManagementPage() {
 
       {/* LIST */}
       <Paper sx={{ borderRadius: "20px", overflow: "hidden" }}>
-        {/* HEADER */}
         <Box sx={{ display: "flex", px: 3, py: 2, bgcolor: "#FAFAFA" }}>
           <Box sx={{ width: "35%" }}>User</Box>
           <Box sx={{ width: "25%" }}>Phone</Box>
@@ -301,12 +253,10 @@ export default function UserManagementPage() {
 
         {filteredUsers.map((user) => (
           <Box key={user.id} sx={{ display: "flex", px: 3, py: 2 }}>
-            {/* USER */}
             <Box sx={{ width: "35%", display: "flex", gap: 2 }}>
               <Avatar variant="rounded" sx={{ width: 56, height: 56 }}>
                 {user.name[0]}
               </Avatar>
-
               <Box>
                 <Typography sx={{ fontWeight: 700 }}>{user.name}</Typography>
                 <Typography variant="body2" sx={{ color: "#999" }}>
@@ -315,41 +265,28 @@ export default function UserManagementPage() {
               </Box>
             </Box>
 
-            {/* PHONE */}
             <Box sx={{ width: "25%" }}>
               <Typography>{user.phone}</Typography>
             </Box>
 
-            {/* ROLE */}
             <Box sx={{ width: "15%" }}>
               <Chip
                 label={user.role.charAt(0).toUpperCase() + user.role.slice(1)}
                 size="small"
                 sx={{
                   bgcolor:
-                    user.role === "admin"
-                      ? "#F3E8FF"
-                      : user.role === "seller"
-                      ? "#FFF4E5"
-                      : "#E3F2FD",
+                    user.role === "admin" ? "#F3E8FF" : user.role === "seller" ? "#FFF4E5" : "#E3F2FD",
                   color:
-                    user.role === "admin"
-                      ? "#7E22CE"
-                      : user.role === "seller"
-                      ? "#EA580C"
-                      : "#1E88E5",
+                    user.role === "admin" ? "#7E22CE" : user.role === "seller" ? "#EA580C" : "#1E88E5",
                   fontWeight: 600,
                 }}
               />
             </Box>
 
-            {/* STATUS */}
             <Box sx={{ width: "15%" }}>
               <Select
                 value={user.status}
-                onChange={(e) =>
-                  handleChangeStatus(user.id, e.target.value)
-                }
+                onChange={(e) => handleChangeStatus(user.id, e.target.value)}
                 size="small"
                 IconComponent={KeyboardArrowDownIcon}
                 sx={{
@@ -357,18 +294,9 @@ export default function UserManagementPage() {
                   fontSize: "0.75rem",
                   fontWeight: 600,
                   height: "28px",
-
-                  bgcolor:
-                    user.status === "active" ? "#E8F5E9" : "#FFEBEE",
-                  color:
-                    user.status === "active" ? "#2E7D32" : "#C62828",
-
-                  "& .MuiSelect-select": {
-                    display: "flex",
-                    alignItems: "center",
-                    px: 1.5,
-                  },
-
+                  bgcolor: user.status === "active" ? "#E8F5E9" : "#FFEBEE",
+                  color: user.status === "active" ? "#2E7D32" : "#C62828",
+                  "& .MuiSelect-select": { display: "flex", alignItems: "center", px: 1.5 },
                   "& fieldset": { border: "none" },
                 }}
               >
@@ -377,13 +305,10 @@ export default function UserManagementPage() {
               </Select>
             </Box>
 
-
-            {/* ACTION */}
             <Box sx={{ width: "10%", display: "flex", justifyContent: "flex-end", gap: 1 }}>
               <IconButton onClick={() => navigate(`/admin/edit-user/${user.id}`)}>
                 <EditIcon />
               </IconButton>
-
               <IconButton onClick={() => handleDelete(user.id)}>
                 <DeleteIcon />
               </IconButton>

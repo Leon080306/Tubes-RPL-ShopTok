@@ -41,6 +41,8 @@ const ShopDashboard = lazy(() => import("../pages/Shop/SellerDashboard"));
 const OrderDetailPage = lazy(() => import("../pages/orders/OrderDetailPage"));
 
 const UserManagementPage = lazy(() => import("../pages/admin/UserManagementPage"))
+const CreateUserPage = lazy(() => import("../pages/admin/CreateUserPage"))
+const EditUserPage = lazy(() => import("../pages/admin/EditUserPage"))
 
 export const AppRoutes = () => {
   return (
@@ -79,7 +81,10 @@ export const AppRoutes = () => {
 
         <Route path="/shop/:shopId" element={<ShopProfile />} />
         <Route path="/wishlist" element={<Wishlist />} />
+
         <Route path="/admin/user-management" element={<UserManagementPage />} />
+        <Route path="/admin/create-user" element={<CreateUserPage />} />
+        <Route path="/admin/edit-user/:id" element={<EditUserPage />} />
       </Route>
 
       <Route path="/shop/dashboard" element={<ShopDashboard />} />

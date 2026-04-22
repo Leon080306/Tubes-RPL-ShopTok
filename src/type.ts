@@ -89,20 +89,19 @@ export type AuthState = {
 }
 
 export type ChatMessage = {
-    chat_id: number
-    sender_role: 'customer' | 'seller'
-    message: string
-    created_at: string
-}
+    chat_id: string;       // UUID
+    sender_role: string;
+    message: string;
+    created_at: string;
+};
 
 export type ChatSession = {
-    shop_id: number
-    shop_name: string
-    shop_logo?: string
-    last_message: string
-    unread_count: number
-    messages: ChatMessage[]
-}
+    shop_id: string;       // UUID
+    shop_name: string;
+    last_message: string;
+    unread_count: number;
+    messages: ChatMessage[];
+};
 
 export type ShopInfo = {
     shop_id: string
