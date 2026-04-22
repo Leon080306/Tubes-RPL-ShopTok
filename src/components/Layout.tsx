@@ -63,7 +63,11 @@ export function Layout() {
   }, []);
 
   const handleProfileNavigation = () => {
-    navigate("/profile")
+    if (userInfo?.role === "customer") {
+      navigate("/profile")
+    } else {
+      navigate("/shop/dashboard")
+    }
   };
 
   const products = [
@@ -184,9 +188,15 @@ export function Layout() {
                 <Link className="nav-link" to="/products">
                   Products
                 </Link>
-                <Link className="nav-link" to="/orders">
-                  Orders
-                </Link>
+                {userInfo?.role === "customer" ? (
+                  <Link className="nav-link" to="/orders">
+                    Orders
+                  </Link>
+                ) : (
+                  <Link className="nav-link" to="/shop/dashboard">
+                    Shop
+                  </Link>
+                )}
               </Box>
             </nav>
           </Box>

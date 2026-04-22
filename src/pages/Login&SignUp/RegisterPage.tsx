@@ -10,11 +10,12 @@ import {
   Radio,
   Link as MuiLink,
 } from "@mui/material";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import PersonIcon from "@mui/icons-material/Person";
 import StorefrontIcon from "@mui/icons-material/Storefront";
 import { useNavigate } from "react-router";
+import { useRadioGroup } from "@mui/material";
 
 export default function RegisterPage() {
   const [role, setRole] = useState("customer");
@@ -73,6 +74,10 @@ export default function RegisterPage() {
     }
   };
 
+  useEffect(() => {
+    console.log("role updated:", role);
+  }, [role]);
+
   return (
     <Box
       sx={{
@@ -118,20 +123,20 @@ export default function RegisterPage() {
           <RadioGroup
             row
             value={role}
-            onChange={(e) => setRole(e.target.value)}
+            onChange={(e) => {
+              setRole(e.target.value)
+            }}
             sx={{ justifyContent: "center", gap: 2, mb: 2 }}
           >
             <RoleCard
               value="customer"
               label="Customer"
               icon={<PersonIcon sx={{ fontSize: 32 }} />}
-              active={role === "customer"}
             />
             <RoleCard
               value="seller"
               label="Seller"
               icon={<StorefrontIcon sx={{ fontSize: 32 }} />}
-              active={role === "seller"}
             />
           </RadioGroup>
 
@@ -221,18 +226,19 @@ export default function RegisterPage() {
   );
 }
 
+
 function RoleCard({
   value,
   label,
   icon,
-  active,
 }: {
   value: string;
   label: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  icon: any;
-  active: boolean;
+  icon: React.ReactNode;
 }) {
+  const radioGroup = useRadioGroup();
+  const checked = radioGroup?.value === value;
+
   return (
     <FormControlLabel
       value={value}
@@ -248,9 +254,9 @@ function RoleCard({
             height: 100,
             borderRadius: 3,
             border: "2px solid",
-            borderColor: active ? "#16a34a" : "#e0e0e0",
-            backgroundColor: active ? "#f0fdf4" : "transparent",
-            color: active ? "#16a34a" : "#666",
+            borderColor: checked ? "#16a34a" : "#e0e0e0",
+            backgroundColor: checked ? "#f0fdf4" : "transparent",
+            color: checked ? "#16a34a" : "#666",
             transition: "all 0.3s ease",
             cursor: "pointer",
             "&:hover": { borderColor: "#16a34a" },

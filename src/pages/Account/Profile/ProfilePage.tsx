@@ -29,12 +29,12 @@ export default function ProfilePage() {
     );
   }
 
-  const stats = userInfo.orderStats || {
-    unpaid: 0,
-    processing: 0,
-    shipped: 0,
-    toReview: 0,
-  };
+    const stats = userInfo.orderStats || {
+      unpaid: 0,
+      processing: 0,
+      shipped: 0,
+      toReview: 0,
+    };
 
   return (
     <Box
