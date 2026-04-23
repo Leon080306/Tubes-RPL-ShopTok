@@ -18,78 +18,120 @@ import banner1 from "../../assets/stock-images/home-bannerHeadset.jpg";
 import { useState } from "react";
 import { useNavigate } from "react-router";
 
+// redux
+import { useEffect } from "react";
+import { useAppDispatch } from "../../hooks/useAppDispatch";
+import { useAppSelector } from "../../hooks/useAppSelector";
+import { fetchWishlist, toggleWishlist } from "../../store/wishlistSlice";
+import FavoriteIcon from "@mui/icons-material/Favorite";
+
 export default function Wishlist() {
+    const dispatch = useAppDispatch();
+    const { items, wishlistedIds, status } = useAppSelector(state => state.wishlist);
+
     const [rating, setRating] = useState<number | null>(null);
     const [sortPrice, setSortPrice] = useState<"high" | "low" | "">("");
     const [sortRating, setSortRating] = useState<"high" | "low" | "">("");
 
     const navigate = useNavigate();
 
-    const dummy = [
-        {
-            id: 1,
-            name: "Handphone",
-            price: 100,
-            rating: 4.5,
-        },
-        {
-            name: "Headset",
-            price: 80,
-            rating: 4.6,
-        },
-        {
-            name: "Keyboard",
-            price: 60,
-            rating: 3.2,
-        },
-        {
-            name: "iPhone 17 Pro Max",
-            price: 1000,
-            rating: 5,
-        },
-        {
-            name: "Handphone",
-            price: 100,
-            rating: 2.8,
-        },
-        {
-            name: "Headset",
-            price: 80,
-            rating: 1.5,
-        },
-        {
-            name: "Keyboard",
-            price: 60,
-            rating: 4.2,
-        },
-        {
-            name: "iPhone 17 Pro Max",
-            price: 1000,
-            rating: 5,
-        },
-    ];
+    useEffect(() => {
+        dispatch(fetchWishlist());
+    }, [dispatch]);
 
-    const filteredProducts = dummy
-        .filter((item) => {
+    const products = items.map(item => ({
+        id: item.product_id,
+        name: item.product.name,
+        price: item.product.variants?.[0]?.price 
+            ? Number(item.product.variants[0].price) 
+            : 0,
+        picture: item.product.variants?.[0]?.picture ?? '',
+        rating: 0,  // rating dari Ratings model, belum ada di response — bisa ditambah nanti
+    }));
+
+    const filteredProducts = products
+        .filter(item => {
             if (!rating) return true;
-
-            const upperBound = rating;
-            const lowerBound = rating === 1 ? 0 : rating - 0.9;
-
-            return item.rating <= upperBound && item.rating >= lowerBound;
+            return item.rating <= rating && item.rating >= (rating === 1 ? 0 : rating - 0.9);
         })
-        // SORTING (MULTI CONDITION)
         .sort((a, b) => {
-            // PRIORITAS 1: PRICE
             if (sortPrice === "high") return b.price - a.price;
             if (sortPrice === "low") return a.price - b.price;
-
-            // PRIORITAS 2: RATING MANUAL
             if (sortRating === "high") return b.rating - a.rating;
             if (sortRating === "low") return a.rating - b.rating;
-
             return 0;
-        });
+    });
+
+    const handleToggleWishlist = (e: React.MouseEvent, product_id: string) => {
+        e.stopPropagation();
+        dispatch(toggleWishlist(product_id));
+    };
+
+    // const dummy = [
+    //     {
+    //         id: 1,
+    //         name: "Handphone",
+    //         price: 100,
+    //         rating: 4.5,
+    //     },
+    //     {
+    //         name: "Headset",
+    //         price: 80,
+    //         rating: 4.6,
+    //     },
+    //     {
+    //         name: "Keyboard",
+    //         price: 60,
+    //         rating: 3.2,
+    //     },
+    //     {
+    //         name: "iPhone 17 Pro Max",
+    //         price: 1000,
+    //         rating: 5,
+    //     },
+    //     {
+    //         name: "Handphone",
+    //         price: 100,
+    //         rating: 2.8,
+    //     },
+    //     {
+    //         name: "Headset",
+    //         price: 80,
+    //         rating: 1.5,
+    //     },
+    //     {
+    //         name: "Keyboard",
+    //         price: 60,
+    //         rating: 4.2,
+    //     },
+    //     {
+    //         name: "iPhone 17 Pro Max",
+    //         price: 1000,
+    //         rating: 5,
+    //     },
+    // ];
+
+    // const filteredProducts = dummy
+    //     .filter((item) => {
+    //         if (!rating) return true;
+
+    //         const upperBound = rating;
+    //         const lowerBound = rating === 1 ? 0 : rating - 0.9;
+
+    //         return item.rating <= upperBound && item.rating >= lowerBound;
+    //     })
+    //     // SORTING (MULTI CONDITION)
+    //     .sort((a, b) => {
+    //         // PRIORITAS 1: PRICE
+    //         if (sortPrice === "high") return b.price - a.price;
+    //         if (sortPrice === "low") return a.price - b.price;
+
+    //         // PRIORITAS 2: RATING MANUAL
+    //         if (sortRating === "high") return b.rating - a.rating;
+    //         if (sortRating === "low") return a.rating - b.rating;
+
+    //         return 0;
+    //     });
 
     return (
         <div style={{
@@ -287,27 +329,20 @@ export default function Wishlist() {
                             }}
                         >
                             <IconButton
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    // masukkin fungsi like di sini
-                                }}
+                                onClick={(e) => handleToggleWishlist(e, product.id)}
                                 sx={{
                                     position: "absolute",
-                                    top: 8,
-                                    right: 8,
-                                    zIndex: 10,
+                                    top: 8, right: 8, zIndex: 10,
                                     backgroundColor: "white",
-                                    width: 30,
-                                    height: 30,
+                                    width: 30, height: 30,
                                     boxShadow: "0 2px 6px rgba(0, 0, 0, 0.35)",
-                                    color: "rgba(255, 0, 0, 0.79)",
-                                    "&:hover": {
-                                        backgroundColor: "white",
-                                        scale: 1.15,
-                                    },
+                                    color: wishlistedIds.includes(product.id) 
+                                        ? "rgba(255, 0, 0, 0.79)" 
+                                        : "#ccc",
+                                    "&:hover": { backgroundColor: "white", scale: 1.15 },
                                 }}
                             >
-                                ❤
+                                <FavoriteIcon sx={{ fontSize: 16 }} />
                             </IconButton>
 
                             <Box

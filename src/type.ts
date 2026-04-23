@@ -1,4 +1,4 @@
-export type BasicMenuProps = {
+ export type BasicMenuProps = {
     label: string;
     menuItems: Category[];
     className?: string;
@@ -10,7 +10,7 @@ export type Category = {
 }
 
 export type UserInfo = {
-    token?: string;
+    user_id: string
     first_name: string
     last_name: string
     email: string
