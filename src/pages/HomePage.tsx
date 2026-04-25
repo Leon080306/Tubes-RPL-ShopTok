@@ -481,22 +481,22 @@ export default function Homepage() {
                                 mb: 2,
                             }}
                         >
-                        <IconButton
-                            onClick={(e) => handleToggleWishlist(e, String(product.id))}
-                            sx={{
-                                position: "absolute",
-                                top: 8, right: 8, zIndex: 10,
-                                backgroundColor: "white",
-                                width: 30, height: 30,
-                                boxShadow: "0 2px 6px rgba(0, 0, 0, 0.35)",
-                                color: wishlistedIds.includes(String(product.id)) 
-                                    ? "rgba(255, 0, 0, 0.79)" 
-                                    : "#ccc",
-                                "&:hover": { backgroundColor: "white", scale: 1.15 },
-                            }}
-                        >
-                            <FavoriteIcon sx={{ fontSize: 16 }} />
-                        </IconButton>
+                            <IconButton
+                                onClick={(e) => handleToggleWishlist(e, String(product.id))}
+                                sx={{
+                                    position: "absolute",
+                                    top: 8, right: 8, zIndex: 10,
+                                    backgroundColor: "white",
+                                    width: 30, height: 30,
+                                    boxShadow: "0 2px 6px rgba(0, 0, 0, 0.35)",
+                                    color: wishlistedIds.includes(String(product.id))
+                                        ? "rgba(255, 0, 0, 0.79)"
+                                        : "#ccc",
+                                    "&:hover": { backgroundColor: "white", scale: 1.15 },
+                                }}
+                            >
+                                <FavoriteIcon sx={{ fontSize: 16 }} />
+                            </IconButton>
 
                             <Box
                                 component="img"

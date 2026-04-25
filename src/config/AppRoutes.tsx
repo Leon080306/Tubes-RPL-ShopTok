@@ -1,4 +1,4 @@
-import { lazy } from "react";
+import { lazy, Suspense } from "react";
 import { Route, Routes } from "react-router";
 import CheckoutPage from "../pages/orders/CheckoutPage";
 import { Layout } from "../components/Layout";
@@ -41,45 +41,45 @@ const UserManagementPage = lazy(() => import("../pages/admin/UserManagementPage"
 
 export const AppRoutes = () => {
   return (
-    <Routes>
-      <Route element={<Layout />}>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/signup" element={<RegisterPage />} />
-        <Route path="/login" element={<LoginPage />} />
+    <Suspense>
+      <Routes>
+        <Route element={<Layout />}>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/signup" element={<RegisterPage />} />
+          <Route path="/login" element={<LoginPage />} />
 
-        <Route path="/profile" element={<ProfilePage />} />
-        <Route path="/profile/edit" element={<EditProfilePage />} />
+          <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/profile/edit" element={<EditProfilePage />} />
 
-        <Route path="/settings" element={<SettingProfilePage />} />
+          <Route path="/settings" element={<SettingProfilePage />} />
 
-        <Route path="/settings/address" element={<SettingAddress />} />
-        <Route path="/settings/address/add" element={<SettingAddAddress />} />
-        <Route path="/settings/address/edit/:id" element={<SettingEditAddress />} />
+          <Route path="/settings/address" element={<SettingAddress />} />
+          <Route path="/settings/address/add" element={<SettingAddAddress />} />
+          <Route path="/settings/address/edit/:id" element={<SettingEditAddress />} />
 
-        <Route path="/settings/bank" element={<SettingRekening />} />
-        <Route path="/settings/bank/add-card" element={<SettingRekeningCard />} />
-        <Route path="/settings/bank/add-rekening" element={<SettingRekeningBank />} />
+          <Route path="/settings/bank" element={<SettingRekening />} />
+          <Route path="/settings/bank/add-card" element={<SettingRekeningCard />} />
+          <Route path="/settings/bank/add-rekening" element={<SettingRekeningBank />} />
 
-        <Route path="/settings/security" element={<SettingKeamanan />} />
+          <Route path="/settings/security" element={<SettingKeamanan />} />
 
-        <Route path="/chattoko" element={<ChatToko />} />
+          <Route path="/chattoko" element={<ChatToko />} />
 
-        <Route path="/product/:id" element={<ProductPage />} />
+          <Route path="/product/:id" element={<ProductPage />} />
 
-        <Route path="/orders" element={<OrderHistoryPage />} />
-        <Route path="/orders/checkout" element={<CheckoutPage />} />
-        <Route path="/orders/detail/:order_id" element={<OrderDetailPage />} />
+          <Route path="/orders" element={<OrderHistoryPage />} />
+          <Route path="/orders/checkout" element={<CheckoutPage />} />
+          <Route path="/orders/detail/:order_id" element={<OrderDetailPage />} />
 
-        <Route path="/cart" element={<CartPage />} />
+          <Route path="/cart" element={<CartPage />} />
 
-        <Route path="/shop/:shopId" element={<ShopProfile />} />
-        <Route path="/wishlist" element={<Wishlist />} />
-        <Route path="/admin/user-management" element={<UserManagementPage />} />
-      </Route>
+          <Route path="/shop/:shopId" element={<ShopProfile />} />
+          <Route path="/wishlist" element={<Wishlist />} />
+          <Route path="/admin/user-management" element={<UserManagementPage />} />
+        </Route>
 
-      <Route path="/shop/dashboard" element={<ShopDashboard />} />
-
-
-    </Routes>
+        <Route path="/shop/dashboard" element={<ShopDashboard />} />
+      </Routes>
+    </Suspense>
   );
 };
