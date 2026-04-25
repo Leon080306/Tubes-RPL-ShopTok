@@ -19,8 +19,6 @@ import { authActions } from "../../store/authSlice";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import LocationOnIcon from "@mui/icons-material/LocationOn";
 import AccountBalanceIcon from "@mui/icons-material/AccountBalance";
-import ChatIcon from "@mui/icons-material/Chat";
-import NotificationsIcon from "@mui/icons-material/Notifications";
 import LockIcon from "@mui/icons-material/Lock";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import LogoutIcon from "@mui/icons-material/Logout";

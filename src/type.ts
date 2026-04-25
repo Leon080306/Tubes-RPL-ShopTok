@@ -55,7 +55,6 @@ export type Rating = {
 }
 
 export type UserInfo = {
-    token?: string;
     user_id: string
     first_name: string
     last_name: string

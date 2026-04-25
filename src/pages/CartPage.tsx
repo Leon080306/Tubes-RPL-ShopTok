@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { Box, Button, Card, CardContent, Checkbox, IconButton, Paper, Typography } from "@mui/material"
 import StorefrontIcon from '@mui/icons-material/Storefront';
 import ChatIcon from '@mui/icons-material/Chat';
@@ -9,8 +9,8 @@ import RemoveIcon from "@mui/icons-material/Remove";
 import formatPrice from "../utils/FormatPrice";
 
 // buat redux
-import { useDispatch, useSelector } from "react-redux"; 
-import { fetchCart, updateCartItem, deleteCartItem } from "../store/cartSlice"; 
+import { useDispatch, useSelector } from "react-redux";
+import { fetchCart, updateCartItem, deleteCartItem } from "../store/cartSlice";
 import type { RootState, AppDispatch } from "../redux/store";
 
 // type CartItem = {
@@ -35,7 +35,8 @@ export default function CartPage() {
 
     useEffect(() => {
         dispatch(fetchCart());
-    }, [dispatch]);
+        console.log(total_payment);
+    }, [dispatch, total_payment]);
 
     const handleIncrement = (variant_id: string, currentQty: number) => {
         dispatch(updateCartItem({ variant_id, quantity: currentQty + 1 }));
@@ -64,8 +65,8 @@ export default function CartPage() {
     //     setProducts(prev => prev.filter(p => p.id !== id));
 
     const total = items
-    .filter(item => item.is_selected) // Cuma hitung yang dipilih
-    .reduce((sum, p) => sum + Number(p.variant.price) * p.quantity, 0);
+        .filter(item => item.is_selected) // Cuma hitung yang dipilih
+        .reduce((sum, p) => sum + Number(p.variant.price) * p.quantity, 0);
     // const total = items.reduce((sum, p) => sum + Number(p.variant.price) * p.quantity, 0);
 
     if (status === 'loading') return <Typography>Loading keranjang...</Typography>;
@@ -129,10 +130,10 @@ export default function CartPage() {
                                 borderBottom: index === items.length - 1 ? "none" : "1px solid rgba(0, 0, 0, 0.2)",
                                 gap: "12px",
                             }}>
-                                <Checkbox 
+                                <Checkbox
                                     checked={item.is_selected}
                                     onChange={() => handleToggleSelect(item.variant_id, item.is_selected)}
-                                    sx={{ color: "#89a471", '&.Mui-checked': { color: "#89a471" }, padding: "0" }} 
+                                    sx={{ color: "#89a471", '&.Mui-checked': { color: "#89a471" }, padding: "0" }}
                                 />
                                 <Box sx={{ display: "flex", flexDirection: "row", justifyContent: "space-between", alignItems: "stretch", flex: 1 }}>
                                     <Box sx={{ display: "flex", justifyContent: "start", alignItems: "flex-start", gap: "18px" }}>
@@ -211,5 +212,5 @@ export default function CartPage() {
             </Box>
         </Paper>
     </Box>
-    
+
 }

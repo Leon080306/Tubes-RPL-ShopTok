@@ -20,33 +20,39 @@ import formatPrice from "../utils/FormatPrice";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 
-import { useEffect } from "react";
 import { useAppDispatch } from "../hooks/useAppDispatch";
 import { useAppSelector } from "../hooks/useAppSelector";
 import { fetchWishlist, toggleWishlist } from "../store/wishlistSlice";
-import FavoriteIcon from "@mui/icons-material/Favorite";
-import type { Product } from "../type";
+import type { Category, Product } from "../type";
 
 export default function Homepage() {
     const [rating, setRating] = useState<number | null>(null);
     const [sortPrice, setSortPrice] = useState<"high" | "low" | "">("");
     const [sortRating, setSortRating] = useState<"high" | "low" | "">("");
-
     const [products, setProducts] = useState<Product[]>([]);
-
-    const navigate = useNavigate();
-
-    const dispatch = useAppDispatch();
-    const { wishlistedIds } = useAppSelector(state => state.wishlist);
+    const [categories, setCategories] = useState<Category[]>([]);
+    const [selectedCategory, setSelectedCategory] = useState<string>("");
 
     useEffect(() => {
-        dispatch(fetchWishlist());
-    }, [dispatch]);
+        const fetchCategories = async () => {
+            try {
+                const res = await fetch("/api/category", {
+                    method: "GET",
+                    credentials: "include",
+                });
 
-    const handleToggleWishlist = (e: React.MouseEvent, product_id: string) => {
-        e.stopPropagation();
-        dispatch(toggleWishlist(product_id));
-    };
+                const data = await res.json();
+
+                setCategories(data.records || []);
+            } catch (error) {
+                console.error("Failed to fetch categories:", error);
+            }
+        };
+
+        fetchCategories();
+    }, []);
+
+    const navigate = useNavigate();
 
     const dispatch = useAppDispatch();
     const { wishlistedIds } = useAppSelector(state => state.wishlist);
@@ -80,66 +86,22 @@ export default function Homepage() {
         fetchProducts();
     }, []);
 
-    // const dummy = [
-    //     {
-    //         id: 1,
-    //         name: "Handphone",
-    //         price: 100,
-    //         rating: 4.5,
-    //     },
-    //     {
-    //         name: "Headset",
-    //         price: 80,
-    //         rating: 4.6,
-    //     },
-    //     {
-    //         name: "Keyboard",
-    //         price: 60,
-    //         rating: 3.2,
-    //     },
-    //     {
-    //         name: "iPhone 17 Pro Max",
-    //         price: 1000,
-    //         rating: 5,
-    //     },
-    //     {
-    //         name: "Handphone",
-    //         price: 100,
-    //         rating: 2.8,
-    //     },
-    //     {
-    //         name: "Headset",
-    //         price: 80,
-    //         rating: 1.5,
-    //     },
-    //     {
-    //         name: "Keyboard",
-    //         price: 60,
-    //         rating: 4.2,
-    //     },
-    //     {
-    //         name: "iPhone 17 Pro Max",
-    //         price: 1000,
-    //         rating: 5,
-    //     },
-    // ];
-
-
     const getAverageRating = (ratings?: { value: number }[]) => {
-      if (!ratings || ratings.length === 0) return 0;
+        if (!ratings || ratings.length === 0) return 0;
 
-      const total = ratings.reduce((sum, r) => sum + r.value, 0);
-      return total / ratings.length;
+        const total = ratings.reduce((sum, r) => sum + r.value, 0);
+        return total / ratings.length;
     };
 
     const getMinPrice = (variants?: { price: number }[]) => {
-      if (!variants || variants.length === 0) return 0;
+        if (!variants || variants.length === 0) return 0;
 
-      return Math.min(...variants.map(v => Number(v.price)));
+        return Math.min(...variants.map(v => Number(v.price)));
     };
 
     const filteredProducts = products
         .filter((item) => {
+            if (selectedCategory && item.category?.name !== selectedCategory) return false;
             if (!rating) return true;
 
             const avg = getAverageRating(item.ratings);
@@ -151,23 +113,23 @@ export default function Homepage() {
         })
         // SORTING (MULTI CONDITION)
         .sort((a, b) => {
-          let result = 0;
+            let result = 0;
 
-          if (sortPrice) {
-            result =
-              sortPrice === "high"
-                ? getMinPrice(b.variants) - getMinPrice(a.variants)
-                : getMinPrice(a.variants) - getMinPrice(b.variants);
-          }
+            if (sortPrice) {
+                result =
+                    sortPrice === "high"
+                        ? getMinPrice(b.variants) - getMinPrice(a.variants)
+                        : getMinPrice(a.variants) - getMinPrice(b.variants);
+            }
 
-          if (result === 0 && sortRating) {
-            result =
-              sortRating === "high"
-                ? getAverageRating(b.ratings) - getAverageRating(a.ratings)
-                : getAverageRating(a.ratings) - getAverageRating(b.ratings);
-          }
+            if (result === 0 && sortRating) {
+                result =
+                    sortRating === "high"
+                        ? getAverageRating(b.ratings) - getAverageRating(a.ratings)
+                        : getAverageRating(a.ratings) - getAverageRating(b.ratings);
+            }
 
-          return result;
+            return result;
         });
 
     const prices = products.map(p => getMinPrice(p.variants));
@@ -209,13 +171,13 @@ export default function Homepage() {
     //   })
     //   .slice(0, 8);
 
-    const isFiltering = rating !== null || sortPrice || sortRating;
+    const isFiltering = rating !== null || sortPrice || sortRating || selectedCategory;
 
     const finalProducts = isFiltering
-      ? filteredProducts
-      : [...products]
-          .sort((a, b) => getRecommendationScore(b) - getRecommendationScore(a))
-          // .slice(0, 8);
+        ? filteredProducts
+        : [...products]
+            .sort((a, b) => getRecommendationScore(b) - getRecommendationScore(a))
+    // .slice(0, 8);
 
     return (
         <div style={{
@@ -338,7 +300,8 @@ export default function Homepage() {
                 <FormControl size="small" sx={{ width: 140 }}>
                     <Select
                         displayEmpty
-                        defaultValue=""
+                        value={selectedCategory}
+                        onChange={(e) => setSelectedCategory(e.target.value)}
                         renderValue={(selected) =>
                             !selected ? (
                                 <span style={{ opacity: 0.6 }}>Category</span>
@@ -347,12 +310,16 @@ export default function Homepage() {
                             )
                         }
                     >
-                        <MenuItem value="" sx={{ opacity: 0.4 }}>
+                        <MenuItem value="" sx={{
+                            opacity: 0.6
+                        }}>
                             <em>All Category</em>
                         </MenuItem>
-                        <MenuItem value={"Smartphone"}>Smartphone</MenuItem>
-                        <MenuItem value={"Headphone"}>Headphone</MenuItem>
-                        <MenuItem value={"Earbuds"}>Earbuds</MenuItem>
+                        {categories.map((c) => (
+                            <MenuItem key={c.category_id} value={c.name}>
+                                <em>{c.name}</em>
+                            </MenuItem>
+                        ))}
                     </Select>
                 </FormControl>
 
@@ -491,155 +458,162 @@ export default function Homepage() {
                 }}
             >
                 {finalProducts.map((product) => {
-                  const avgRating = getAverageRating(product.ratings);
-                  const price = getMinPrice(product.variants);
-                  const image = product.variants?.[0]?.picture || banner1;
+                    const avgRating = getAverageRating(product.ratings);
+                    const price = getMinPrice(product.variants);
+                    const image = product.variants?.[0]?.picture || banner1;
 
-                  return (
-                      <Card
-                          key={product.product_id}
-                          sx={{
-                              cursor: "pointer",
-                              borderRadius: 4,
-                              boxShadow: "0px 0px 20px rgba(0, 0, 0, 0.27)",
-                              p: 2,
-                              backgroundColor: "#ffffff",
-                              transition: "0.3s",
-                              "&:hover": {
-                                  transform: "translateY(-6px)",
-                                  boxShadow: "0 8px 24px rgba(0,0,0,0.08)",
-                              },
-                          }}
-                          onClick={() => navigate(`/product/${product.product_id}`)}
-                      >
-                          <Box
-                              sx={{
-                                  position: "relative",
-                                  backgroundColor: "#f3f3f3",
-                                  borderRadius: 3,
-                                  height: 200,
-                                  display: "flex",
-                                  alignItems: "center",
-                                  justifyContent: "center",
-                                  overflow: "hidden",
-                                  mb: 2,
-                              }}
-                          >
-                              <IconButton
-                                  onClick={(e) => {
-                                      e.stopPropagation();
-                                  }}
-                                  sx={{
-                                      position: "absolute",
-                                      top: 8,
-                                      right: 8,
-                                      zIndex: 10,
-                                      backgroundColor: "white",
-                                      width: 30,
-                                      height: 30,
-                                      boxShadow: "0 2px 6px rgba(0, 0, 0, 0.35)",
-                                  }}
-                              >
-                                  ❤
-                              </IconButton>
+                    return (
+                        <Card
+                            key={product.product_id}
+                            sx={{
+                                cursor: "pointer",
+                                borderRadius: 4,
+                                boxShadow: "0px 0px 20px rgba(0, 0, 0, 0.27)",
+                                p: 2,
+                                backgroundColor: "#ffffff",
+                                transition: "0.3s",
+                                "&:hover": {
+                                    transform: "translateY(-6px)",
+                                    boxShadow: "0 8px 24px rgba(0,0,0,0.08)",
+                                },
+                            }}
+                            onClick={() => navigate(`/product/${product.product_id}`)}
+                        >
+                            <Box
+                                sx={{
+                                    position: "relative",
+                                    backgroundColor: "#f3f3f3",
+                                    borderRadius: 3,
+                                    height: 200,
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    overflow: "hidden",
+                                    mb: 2,
+                                }}
+                            >
+                                <IconButton
+                                    onClick={(e) => {
+                                        handleToggleWishlist(e, product.product_id);
+                                        e.stopPropagation();
+                                    }}
+                                    sx={{
+                                        position: "absolute",
+                                        top: 8,
+                                        right: 8,
+                                        zIndex: 10,
+                                        backgroundColor: "white",
+                                        width: 30,
+                                        height: 30,
+                                        boxShadow: "0 2px 6px rgba(0, 0, 0, 0.35)",
+                                        color: wishlistedIds.includes(product.product_id)
+                                            ? "rgba(255, 0, 0, 0.79)"
+                                            : "#ccc",
+                                        "&:hover": {
+                                            backgroundColor: "white",
+                                        },
+                                    }}
+                                >
+                                    ❤
+                                </IconButton>
 
-                              <Box
-                                  component="img"
-                                  src={image}
-                                  sx={{
-                                      width: "100%",
-                                      height: "100%",
-                                      objectFit: "contain",
-                                      padding: "16px",
-                                      transition: "transform 0.35s ease",
-                                      ".MuiCard-root:hover &": {
-                                          transform: "scale(1.08)",
-                                      },
-                                  }}
-                              />
-                          </Box>
+                                <Box
+                                    component="img"
+                                    src={image}
+                                    sx={{
+                                        width: "100%",
+                                        height: "100%",
+                                        objectFit: "contain",
+                                        padding: "16px",
+                                        transition: "transform 0.35s ease",
+                                        ".MuiCard-root:hover &": {
+                                            transform: "scale(1.08)",
+                                        },
+                                    }}
+                                />
+                            </Box>
 
-                          <Box>
-                              <Typography
-                                  variant="subtitle1"
-                                  sx={{
-                                      fontWeight: 500,
-                                      lineHeight: 1.2,
-                                      fontSize: 15,
+                            <Box>
+                                <Typography
+                                    variant="subtitle1"
+                                    sx={{
+                                        fontWeight: 500,
+                                        lineHeight: 1.2,
+                                        fontSize: 15,
 
-                                      whiteSpace: "nowrap",
-                                      overflow: "hidden",
-                                      textOverflow: "ellipsis",
-                                  }}
-                                  title={product.name}
-                              >
-                                  {product.name}
-                              </Typography>
+                                        whiteSpace: "nowrap",
+                                        overflow: "hidden",
+                                        textOverflow: "ellipsis",
+                                    }}
+                                    title={product.name}
+                                >
+                                    {product.name}
+                                </Typography>
 
-                              <Typography
-                                  variant="subtitle1"
-                                  sx={{
-                                      fontWeight: 700,
-                                      mt: 0.5,
-                                  }}
-                              >
-                                  {formatPrice(price)}
-                              </Typography>
-                          </Box>
+                                <Typography
+                                    variant="subtitle1"
+                                    sx={{
+                                        fontWeight: 700,
+                                        mt: 0.5,
+                                    }}
+                                >
+                                    {formatPrice(price)}
+                                </Typography>
+                            </Box>
 
-                          <Typography
-                              variant="body2"
-                              sx={{ color: "#757575", mt: 0.5 }}
-                          >
-                              {product.description}
-                          </Typography>
+                            <Typography
+                                variant="body2"
+                                sx={{ color: "#757575", mt: 0.5 }}
+                            >
+                                {product.description}
+                            </Typography>
 
-                          <Box
-                              sx={{
-                                  display: "flex",
-                                  alignItems: "center",
-                                  gap: 1,
-                                  mt: 1,
-                              }}
-                          >
-                              <Rating
-                                  value={avgRating}
-                                  precision={0.1}
-                                  readOnly
-                                  size="small"
-                                  sx={{ color: "#16a34a" }}
-                              />
-                              <Typography
-                                  variant="caption"
-                                  sx={{ color: "#16a34a" }}
-                              >
-                                  ({product.ratings?.length || 0})
-                              </Typography>
-                          </Box>
+                            <Box
+                                sx={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: 1,
+                                    mt: 1,
+                                }}
+                            >
+                                <Rating
+                                    value={avgRating}
+                                    precision={0.1}
+                                    readOnly
+                                    size="small"
+                                    sx={{ color: "#16a34a" }}
+                                />
+                                <Typography
+                                    variant="caption"
+                                    sx={{ color: "#16a34a" }}
+                                >
+                                    ({product.ratings?.length || 0})
+                                </Typography>
+                            </Box>
 
-                          <Box sx={{ mt: 2 }}>
-                              <Button
-                                  fullWidth
-                                  sx={{
-                                      border: "1px solid #0f5132",
-                                      borderRadius: "999px",
-                                      textTransform: "none",
-                                      fontSize: 13,
-                                      fontWeight: 600,
-                                      py: 0.8,
-                                      color: "#0f5132",
-                                      "&:hover": {
-                                          backgroundColor: "#0f5132",
-                                          color: "white",
-                                      },
-                                  }}
-                              >
-                                  Add to Cart
-                              </Button>
-                          </Box>
-                      </Card>
-                  );
-              })}
+                            <Box sx={{ mt: 2 }}>
+                                <Button
+                                    fullWidth
+                                    sx={{
+                                        border: "1px solid #0f5132",
+                                        borderRadius: "999px",
+                                        textTransform: "none",
+                                        fontSize: 13,
+                                        fontWeight: 600,
+                                        py: 0.8,
+                                        color: "#0f5132",
+                                        "&:hover": {
+                                            backgroundColor: "#0f5132",
+                                            color: "white",
+                                        },
+                                    }}
+                                >
+                                    Add to Cart
+                                </Button>
+                            </Box>
+                        </Card>
+                    );
+                })}
             </Box>
             {/* <Typography variant="h5" sx={{ mt: 8, mb: 2 }}>
                 <strong>Recently Viewed</strong>
@@ -657,7 +631,7 @@ export default function Homepage() {
                     paddingBottom: "30px", // space buat scrollbar
                 }}
             > */}
-                {/* {recentProductsDummy.map((item, index) => (
+            {/* {recentProductsDummy.map((item, index) => (
                     <SwiperSlide key={index}>
                         <Card
                             sx={{
@@ -673,8 +647,8 @@ export default function Homepage() {
                                 },
                             }}
                         > */}
-                            {/* IMAGE CONTAINER */}
-                            {/* <Box
+            {/* IMAGE CONTAINER */}
+            {/* <Box
                                 sx={{
                                     position: "relative",
                                     backgroundColor: "#f5f5f5",
@@ -686,8 +660,8 @@ export default function Homepage() {
                                     mb: 2,
                                 }}
                             > */}
-                                {/* FAVORITE */}
-                                {/* <IconButton
+            {/* FAVORITE */}
+            {/* <IconButton
                                     sx={{
                                         position: "absolute",
                                         top: 8,
@@ -716,8 +690,8 @@ export default function Homepage() {
                                 />
                             </Box> */}
 
-                            {/* TITLE + PRICE */}
-                            {/* <Box
+            {/* TITLE + PRICE */}
+            {/* <Box
                                 sx={{
                                     display: "flex",
                                     justifyContent: "space-between",
@@ -732,16 +706,16 @@ export default function Homepage() {
                                 </Typography>
                             </Box> */}
 
-                            {/* DESCRIPTION */}
-                            {/* <Typography
+            {/* DESCRIPTION */}
+            {/* <Typography
                                 fontSize={12}
                                 sx={{ color: "#777", mb: 1 }}
                             >
                                 Organic Cotton, fairtrade certified
                             </Typography> */}
 
-                            {/* RATING */}
-                            {/* <Box
+            {/* RATING */}
+            {/* <Box
                                 sx={{
                                     display: "flex",
                                     alignItems: "center",
@@ -763,8 +737,8 @@ export default function Homepage() {
                                 </Typography>
                             </Box> */}
 
-                            {/* BUTTON */}
-                            {/* <Box sx={{ mt: 2 }}>
+            {/* BUTTON */}
+            {/* <Box sx={{ mt: 2 }}>
                                 <Box
                                     sx={{
                                         border: "1px solid #0f5132",
@@ -788,7 +762,7 @@ export default function Homepage() {
                             </Box>
                         </Card>
                     </SwiperSlide> */}
-                {/* ))}
+            {/* ))}
             </Swiper> */}
         </div>
     );

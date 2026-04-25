@@ -1,4 +1,3 @@
-import React, { useState } from "react";
 import { Box, Container, Typography, TextField, Button, Radio, RadioGroup, FormControlLabel, Checkbox, Divider, InputLabel, InputAdornment, Breadcrumbs, Link, } from "@mui/material";
 
 import { useNavigate } from "react-router";
@@ -6,13 +5,13 @@ import HomeIcon from "@mui/icons-material/Home";
 import CreditCardIcon from "@mui/icons-material/CreditCard";
 
 // redux
-import { useAppDispatch } from "../../hooks/useAppDispatch";
 import { useAppSelector } from "../../hooks/useAppSelector";
-import { checkoutOrder } from "../../store/orderSlice";
+import React from "react";
+import formatPrice from "../../utils/FormatPrice";
 
 export default function CheckoutPage() {
     const [isReturningCustomer, setIsReturningCustomer] = React.useState(false);
-    const dispatch = useAppDispatch();
+    // const dispatch = useAppDispatch();
     const navigate = useNavigate();
 
     // Ambil cart items yang is_selected === true
@@ -20,32 +19,32 @@ export default function CheckoutPage() {
     const selectedItems = items.filter(item => item.is_selected);
 
     // Ambil addresses dari user
-    const userInfo = useAppSelector(state => state.auth.userInfo);
-    const addresses = userInfo?.addresses ?? [];
-    const defaultAddress = addresses.find(a => a.is_default) ?? addresses[0];
+    // const userInfo = useAppSelector(state => state.auth.userInfo);
+    // const addresses = userInfo?.addresses ?? [];
+    // const defaultAddress = addresses.find(a => a.is_default) ?? addresses[0];
 
-    const [selectedAddressId, setSelectedAddressId] = useState<string>(
-        defaultAddress?.address_id?.toString() ?? ""
-    );
-    const [voucherCode, setVoucherCode] = useState("");
+    // const [selectedAddressId, setSelectedAddressId] = useState<string>(
+    //     defaultAddress?.address_id?.toString() ?? ""
+    // );
+    // const [voucherCode, setVoucherCode] = useState("");
 
-    const handleCheckout = async () => {
-        if (!selectedAddressId) {
-            alert("Pilih alamat pengiriman dulu!");
-            return;
-        }
-        const result = await dispatch(checkoutOrder({
-            address_id: selectedAddressId,
-            // voucher_id: voucherCode || undefined,
-        }));
+    // const handleCheckout = async () => {
+    //     if (!selectedAddressId) {
+    //         alert("Pilih alamat pengiriman dulu!");
+    //         return;
+    //     }
+    //     const result = await dispatch(checkoutOrder({
+    //         address_id: selectedAddressId,
+    //         // voucher_id: voucherCode || undefined,
+    //     }));
 
-        if (checkoutOrder.fulfilled.match(result)) {
-            alert("Checkout berhasil!");
-            navigate("/orders");
-        } else {
-            alert("Checkout gagal: " + (result.payload as any)?.message);
-        }
-    };
+    //     if (checkoutOrder.fulfilled.match(result)) {
+    //         alert("Checkout berhasil!");
+    //         navigate("/orders");
+    //     } else {
+    //         alert("Checkout gagal: " + (result.payload as any)?.message);
+    //     }
+    // };
 
     const border = "#E5E5E5";
     const green = "#0B5D3B";
@@ -58,10 +57,6 @@ export default function CheckoutPage() {
             borderRadius: "6px",
         },
     };
-
-    function formatPrice(total_payment: number): React.ReactNode {
-        throw new Error("Function not implemented.");
-    }
 
     return (
         <Container maxWidth="lg" sx={{ py: 4 }}>

@@ -112,6 +112,7 @@ export default function CreateCategoryPage() {
                                     categories.find((c) => c.category_id === parent) || null
                                 }
                                 onChange={(e, value) => {
+                                    console.log(e)
                                     setParent(value?.category_id || "");
                                 }}
                                 renderInput={(params) => (

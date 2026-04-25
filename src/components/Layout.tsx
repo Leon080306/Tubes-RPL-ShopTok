@@ -12,7 +12,7 @@ import {
   Toolbar,
   Typography,
 } from "@mui/material";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, Outlet } from "react-router";
 import AppLogoInline from "../assets/logos/AppLogo-inline.png";
 import AppLogoOnly from "../assets/logos/AppLogo-iconOnly.png";
@@ -101,16 +101,17 @@ export function Layout() {
     fetchProducts();
   }, []);
 
-  // const searchResults = useMemo(() => {
-  //   const q = search.trim().toLowerCase();
-  //   if (!q) return [];
-  //   return allProducts
-  //     .filter((p) => p.name.toLowerCase().includes(q))
-  //     .slice(0, 5);
-  // }, [search, allProducts]);
+  const searchResults = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return [];
+    return allProducts
+      .filter((p) => p.name.toLowerCase().includes(q))
+      .slice(0, 5);
+  }, [search, allProducts]);
 
   useEffect(() => {
     const fetchCategories = async () => {
+      console.log(searchResults)
       try {
         setLoadingCategories(true);
 

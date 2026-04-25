@@ -100,49 +100,34 @@ export default function ProductPage() {
         return;
       }
 
-      // const formData = new FormData();
-      // formData.append("user_id", "0cbffc5e-307c-4c4c-952f-f4e0a9bea6de"); // ganti dari auth
-      // formData.append("product_id", id!);
-      // formData.append("value", String(newRating));
-      // formData.append("title", title);
-      // formData.append("description", description);
-
-      // if (picture) {
-      //   formData.append("picture", picture);
-      // }
+      const formData = new FormData();
+      formData.append("user_id", userInfo?.user_id ?? "");
+      formData.append("product_id", id!);
+      formData.append("value", String(newRating));
+      formData.append("title", title);
+      formData.append("description", description);
+      if (picture) {
+        formData.append("picture", picture);
+      }
 
       const response = await fetch("/api/ratings", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          user_id: userInfo?.user_id,
-          // user_id: userInfo?.user_id,
-          product_id: id!,
-          value: newRating,
-          title: title,
-          description: description,
-        }),
+        // ⚠️ NO Content-Type header — browser sets it automatically with boundary
+        body: formData,
       });
 
       const result = await response.json();
 
       if (!response.ok) {
-        console.error("BACKEND ERROR:", result);
         alert(result.message || "Gagal kirim ulasan");
         return;
       }
 
       alert("Ulasan berhasil dikirim");
-
-      // reset form
       setNewRating(0);
       setTitle("");
       setDescription("");
       setPicture(null);
-
-      // reload product biar langsung muncul
       fetchProduct();
     } catch (error) {
       console.error(error);
@@ -158,7 +143,7 @@ export default function ProductPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          user_id: "0cbffc5e-307c-4c4c-952f-f4e0a9bea6de", // ganti dari auth
+          user_id: userInfo?.user_id,
           variant_id: product?.variants?.[selectedVariantIndex].variant_id,
           quantity: qty,
         }),
@@ -467,7 +452,7 @@ export default function ProductPage() {
                   {/* ICON (optional sepatu kecil) */}
                   <Box
                     component="img"
-                    src="/shoe.png" // ganti sesuai asset kamu
+                    src={color.picture} // ganti sesuai asset kamu
                     sx={{
                       width: 18,
                       height: 18,
@@ -744,6 +729,15 @@ export default function ProductPage() {
 
                   {/* COMMENT */}
                   <Typography mt={1}>{item.description}</Typography>
+
+                  <img
+                    src={item.picture}
+                    alt=""
+                    style={{
+                      height: "200px",
+                      width: "auto",
+                    }}
+                  />
                 </Box>
               </Box>
 
