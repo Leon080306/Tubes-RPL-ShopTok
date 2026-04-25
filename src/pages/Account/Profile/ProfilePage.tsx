@@ -20,15 +20,15 @@ import { useAppDispatch } from "../../../hooks/useAppDispatch";
 
 export default function ProfilePage() {
   const { userInfo } = useAppSelector((state) => state.auth);
-    const { orders } = useAppSelector((state) => state.order);  // ← tambah
-    const dispatch = useAppDispatch();  // ← tambah
-    const navigate = useNavigate();
+  const { orders } = useAppSelector((state) => state.order);  // ← tambah
+  const dispatch = useAppDispatch();  // ← tambah
+  const navigate = useNavigate();
 
-    useEffect(() => {
-        if (userInfo) {
-            dispatch(fetchMyOrders('all'));
-        }
-    }, [userInfo, dispatch]);
+  useEffect(() => {
+    if (userInfo?.user_id) {
+      dispatch(fetchMyOrders({ statusFilter: 'all', customer_id: userInfo.user_id }));
+    }
+  }, [userInfo?.user_id, dispatch]);
 
 
   if (!userInfo) {
@@ -42,12 +42,12 @@ export default function ProfilePage() {
     );
   }
 
-    const stats = {
-        unpaid: orders.filter(o => o.status === 'pending').length,
-        processing: orders.filter(o => o.status === 'pending').length,
-        shipped: 0,  // backend belum punya status 'shipped', nanti update kalau sudah ada
-        toReview: orders.filter(o => o.status === 'completed').length,
-    };
+  const stats = {
+    unpaid: orders.filter(o => o.status === 'pending').length,
+    processing: orders.filter(o => o.status === 'pending').length,
+    shipped: 0,  // backend belum punya status 'shipped', nanti update kalau sudah ada
+    toReview: orders.filter(o => o.status === 'completed').length,
+  };
 
   return (
     <Box
@@ -199,7 +199,7 @@ export default function ProfilePage() {
             },
           ].map((item, i) => (
             <Box key={i} sx={{ flex: 1, textAlign: "center" }}>
-              <IconButton sx={{ color: "#555", mb: 1 }}>
+              <IconButton sx={{ color: "#555", mb: 1 }} onClick={() => navigate("/orders")}>
                 <Badge badgeContent={item.count} color="error">
                   {item.icon}
                 </Badge>

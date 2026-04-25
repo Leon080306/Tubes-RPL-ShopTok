@@ -1,4 +1,5 @@
 import {
+    Alert,
     Box,
     Button,
     Card,
@@ -8,44 +9,127 @@ import {
     Rating,
     Select,
     Snackbar,
-    Tooltip,
     Typography,
 } from "@mui/material";
-import TuneIcon from "@mui/icons-material/Tune";
 import StarIcon from "@mui/icons-material/Star";
-import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
 import "swiper/swiper-bundle.css";
 import { Swiper, SwiperSlide } from "swiper/react";
-import { Scrollbar, Navigation, Pagination, Autoplay } from "swiper/modules";
+import { Navigation, Pagination, Autoplay } from "swiper/modules";
 import banner1 from "../assets/stock-images/home-bannerHeadset.jpg";
 import banner2 from "../assets/stock-images/home-bannerHandphone.jpg";
-import { useState } from "react";
+import formatPrice from "../utils/FormatPrice";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
-
-import { useEffect } from "react";
 import { useAppSelector } from "../hooks/useAppSelector";
-import FavoriteIcon from "@mui/icons-material/Favorite";
+import type { Category, Product } from "../type";
 
 export default function Homepage() {
     const [rating, setRating] = useState<number | null>(null);
     const [sortPrice, setSortPrice] = useState<"high" | "low" | "">("");
     const [sortRating, setSortRating] = useState<"high" | "low" | "">("");
+    const [products, setProducts] = useState<Product[]>([]);
+    const [categories, setCategories] = useState<Category[]>([]);
+    const [selectedCategory, setSelectedCategory] = useState<string>("");
+
+    // Snackbar state
+    const [snackOpen, setSnackOpen] = useState(false);
+    const [snackMessage, setSnackMessage] = useState("");
+    const [snackSeverity, setSnackSeverity] = useState<"success" | "error">("success");
 
     const navigate = useNavigate();
-
     const { userInfo } = useAppSelector((state) => state.auth);
     const user_id = userInfo?.user_id;
 
     const [wishlistedIds, setWishlistedIds] = useState<string[]>([]);
 
-    // ================= FETCH WISHLIST =================
+    const getAverageRating = (ratings?: { value: number }[]) => {
+        if (!ratings || ratings.length === 0) return 0;
+        const total = ratings.reduce((sum, r) => sum + r.value, 0);
+        return total / ratings.length;
+    };
+
+    const getMinPrice = (variants?: { price: number }[]) => {
+        if (!variants || variants.length === 0) return 0;
+        return Math.min(...variants.map((v) => Number(v.price)));
+    };
+
+    // ================= ADD TO CART =================
+    const handleAddToCart = async (e: React.MouseEvent, product: Product) => {
+        e.stopPropagation();
+
+        if (!user_id) {
+            setSnackMessage("Login dulu untuk menambahkan ke keranjang");
+            setSnackSeverity("error");
+            setSnackOpen(true);
+            return;
+        }
+
+        // Find first variant with stock > 0
+        const availableVariant = product.variants?.find((v) => (v.stock ?? 0) > 0);
+
+        if (!availableVariant) {
+            setSnackMessage("Produk sedang tidak tersedia");
+            setSnackSeverity("error");
+            setSnackOpen(true);
+            return;
+        }
+
+        try {
+            const res = await fetch("/api/cart", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    user_id,
+                    variant_id: availableVariant.variant_id,
+                    quantity: 1,
+                }),
+            });
+
+            const result = await res.json();
+
+            if (!res.ok) {
+                setSnackMessage(result.message || "Gagal memasukkan ke keranjang");
+                setSnackSeverity("error");
+                setSnackOpen(true);
+                return;
+            }
+
+            setSnackMessage(`${product.name} berhasil ditambahkan ke keranjang!`);
+            setSnackSeverity("success");
+            setSnackOpen(true);
+        } catch (error) {
+            console.error(error);
+            setSnackMessage("Gagal memasukkan ke keranjang");
+            setSnackSeverity("error");
+            setSnackOpen(true);
+        }
+    };
+
+    useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                const res = await fetch("/api/category", {
+                    method: "GET",
+                    credentials: "include",
+                });
+                const data = await res.json();
+                setCategories(data.records || []);
+            } catch (error) {
+                console.error("Failed to fetch categories:", error);
+            }
+        };
+        fetchCategories();
+    }, []);
+
     useEffect(() => {
         if (!user_id) return;
         const getWishlist = async () => {
             try {
                 const res = await fetch(`/api/wishlist?user_id=${user_id}`);
                 const data = await res.json();
-                setWishlistedIds(data.data.map((item: { product_id: string }) => item.product_id));
+                setWishlistedIds(
+                    data.data.map((item: { product_id: string }) => item.product_id)
+                );
             } catch (error) {
                 console.error(error);
             }
@@ -53,8 +137,10 @@ export default function Homepage() {
         getWishlist();
     }, [user_id]);
 
-    // ================= TOGGLE WISHLIST =================
-    const handleToggleWishlist = async (e: React.MouseEvent, product_id: string) => {
+    const handleToggleWishlist = async (
+        e: React.MouseEvent,
+        product_id: string
+    ) => {
         e.stopPropagation();
         if (!user_id) return;
         try {
@@ -63,9 +149,9 @@ export default function Homepage() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ user_id, product_id }),
             });
-            setWishlistedIds(prev =>
+            setWishlistedIds((prev) =>
                 prev.includes(product_id)
-                    ? prev.filter(id => id !== product_id)
+                    ? prev.filter((id) => id !== product_id)
                     : [...prev, product_id]
             );
         } catch (error) {
@@ -73,120 +159,125 @@ export default function Homepage() {
         }
     };
 
-    const dummy = [
-        {
-            id: 1,
-            name: "Handphone",
-            price: 100,
-            rating: 4.5,
-        },
-        {
-            name: "Headset",
-            price: 80,
-            rating: 4.6,
-        },
-        {
-            name: "Keyboard",
-            price: 60,
-            rating: 3.2,
-        },
-        {
-            name: "iPhone 17 Pro Max",
-            price: 1000,
-            rating: 5,
-        },
-        {
-            name: "Handphone",
-            price: 100,
-            rating: 2.8,
-        },
-        {
-            name: "Headset",
-            price: 80,
-            rating: 1.5,
-        },
-        {
-            name: "Keyboard",
-            price: 60,
-            rating: 4.2,
-        },
-        {
-            name: "iPhone 17 Pro Max",
-            price: 1000,
-            rating: 5,
-        },
-    ];
+    const fetchProducts = async () => {
+        try {
+            const response = await fetch("/api/products");
+            if (response.status !== 200) {
+                alert("Failed to reload products");
+                throw new Error("Failed to reload products");
+            }
+            const data = await response.json();
+            setProducts(data.records);
+        } catch (error) {
+            console.error("Error fetching products:", error);
+        }
+    };
 
-    const recentProductsDummy = [
-        {
-            name: "Laptop sleeve MacBook",
-            price: 59,
-            image: banner1,
-        },
-        {
-            name: "AirPods Max",
-            price: 559,
-            image: banner1,
-        },
-        {
-            name: "iPad Mini",
-            price: 569,
-            image: banner1,
-        },
-        {
-            name: "Flower Laptop Sleeve",
-            price: 39,
-            image: banner1,
-        },
-        {
-            name: "Laptop sleeve MacBook",
-            price: 59,
-            image: banner1,
-        },
-        {
-            name: "AirPods Max",
-            price: 559,
-            image: banner1,
-        },
-        {
-            name: "iPad Mini",
-            price: 569,
-            image: banner1,
-        },
-        {
-            name: "Flower Laptop Sleeve",
-            price: 39,
-            image: banner1,
-        },
-    ];
+    useEffect(() => {
+        fetchProducts();
+    }, []);
 
-    const filteredProducts = dummy
+    const filteredProducts = products
         .filter((item) => {
+            if (selectedCategory && item.category?.name !== selectedCategory)
+                return false;
             if (!rating) return true;
-
+            const avg = getAverageRating(item.ratings);
             const upperBound = rating;
             const lowerBound = rating === 1 ? 0 : rating - 0.9;
-
-            return item.rating <= upperBound && item.rating >= lowerBound;
+            return avg >= lowerBound && avg <= upperBound;
         })
-        // SORTING (MULTI CONDITION)
         .sort((a, b) => {
-            // PRIORITAS 1: PRICE
-            if (sortPrice === "high") return b.price - a.price;
-            if (sortPrice === "low") return a.price - b.price;
-
-            // PRIORITAS 2: RATING MANUAL
-            if (sortRating === "high") return b.rating - a.rating;
-            if (sortRating === "low") return a.rating - b.rating;
-
-            return 0;
+            let result = 0;
+            if (sortPrice) {
+                result =
+                    sortPrice === "high"
+                        ? getMinPrice(b.variants) - getMinPrice(a.variants)
+                        : getMinPrice(a.variants) - getMinPrice(b.variants);
+            }
+            if (result === 0 && sortRating) {
+                result =
+                    sortRating === "high"
+                        ? getAverageRating(b.ratings) -
+                        getAverageRating(a.ratings)
+                        : getAverageRating(a.ratings) -
+                        getAverageRating(b.ratings);
+            }
+            return result;
         });
 
+    const prices = products.map((p) => getMinPrice(p.variants));
+    const maxPrice = prices.length ? Math.max(...prices) : 0;
+    const minPrice = prices.length ? Math.min(...prices) : 0;
+
+    const getRecommendationScore = (product: Product) => {
+        const rating = getAverageRating(product.ratings);
+        const price = getMinPrice(product.variants);
+        const normalizedRating = rating / 5;
+        const normalizedPrice =
+            (price - minPrice) / (maxPrice - minPrice || 1);
+        const priceScore = 1 - normalizedPrice;
+        const reviewCount = product.ratings?.length || 0;
+        const reviewScore = Math.min(reviewCount / 50, 1);
+        return normalizedRating * 0.5 + priceScore * 0.3 + reviewScore * 0.2;
+    };
+
+    const isFiltering =
+        rating !== null || sortPrice || sortRating || selectedCategory;
+
+    const finalProducts = isFiltering
+        ? filteredProducts
+        : [...products].sort(
+            (a, b) =>
+                getRecommendationScore(b) - getRecommendationScore(a)
+        );
+
+    // Helper: check if product has any stock
+    const hasStock = (product: Product) =>
+        product.variants?.some((v) => (v.stock ?? 0) > 0) ?? false;
+
     return (
-        <div style={{
-            width: "100%",
-            minWidth: 0
-        }}>
+        <div style={{ width: "100%", minWidth: 0 }}>
+            {/* SNACKBAR */}
+            <Snackbar
+                open={snackOpen}
+                autoHideDuration={5000}
+                onClose={() => setSnackOpen(false)}
+                anchorOrigin={{ vertical: "top", horizontal: "center" }}
+            >
+                <Alert
+                    onClose={() => setSnackOpen(false)}
+                    severity={snackSeverity}
+                    variant="filled"
+                    sx={{
+                        width: "100%",
+                        display: "flex",
+                        alignItems: "center",
+                    }}
+                    action={
+                        snackSeverity === "success" ? (
+                            <Button
+                                color="inherit"
+                                size="small"
+                                onClick={() => {
+                                    setSnackOpen(false);
+                                    navigate("/cart");
+                                }}
+                                sx={{
+                                    textTransform: "none",
+                                    fontWeight: 600,
+                                    textDecoration: "underline",
+                                }}
+                            >
+                                View Cart →
+                            </Button>
+                        ) : undefined
+                    }
+                >
+                    {snackMessage}
+                </Alert>
+            </Snackbar>
+
             <Box sx={{ mt: 10 }}>
                 <Swiper
                     modules={[Navigation, Pagination, Autoplay]}
@@ -211,7 +302,6 @@ export default function Homepage() {
                                         width: "100%",
                                     }}
                                 >
-                                    {/* IMAGE */}
                                     <Box
                                         component="img"
                                         src={banner}
@@ -223,7 +313,6 @@ export default function Homepage() {
                                         }}
                                     />
 
-                                    {/* OVERLAY */}
                                     <Box
                                         sx={{
                                             position: "absolute",
@@ -234,7 +323,6 @@ export default function Homepage() {
                                         }}
                                     />
 
-                                    {/* CONTENT */}
                                     <Box
                                         sx={{
                                             position: "absolute",
@@ -281,6 +369,7 @@ export default function Homepage() {
                                                     backgroundColor: "#15803d",
                                                 },
                                             }}
+                                            onClick={() => navigate("/products")}
                                         >
                                             Shop Now
                                         </Box>
@@ -303,7 +392,8 @@ export default function Homepage() {
                 <FormControl size="small" sx={{ width: 140 }}>
                     <Select
                         displayEmpty
-                        defaultValue=""
+                        value={selectedCategory}
+                        onChange={(e) => setSelectedCategory(e.target.value)}
                         renderValue={(selected) =>
                             !selected ? (
                                 <span style={{ opacity: 0.6 }}>Category</span>
@@ -312,12 +402,14 @@ export default function Homepage() {
                             )
                         }
                     >
-                        <MenuItem value="" sx={{ opacity: 0.4 }}>
+                        <MenuItem value="" sx={{ opacity: 0.6 }}>
                             <em>All Category</em>
                         </MenuItem>
-                        <MenuItem value={"Smartphone"}>Smartphone</MenuItem>
-                        <MenuItem value={"Headphone"}>Headphone</MenuItem>
-                        <MenuItem value={"Earbuds"}>Earbuds</MenuItem>
+                        {categories.map((c) => (
+                            <MenuItem key={c.category_id} value={c.name}>
+                                <em>{c.name}</em>
+                            </MenuItem>
+                        ))}
                     </Select>
                 </FormControl>
 
@@ -326,10 +418,11 @@ export default function Homepage() {
                         displayEmpty
                         value={sortPrice}
                         onChange={(e) => {
-                            const value = e.target.value as "high" | "low" | "";
+                            const value = e.target.value as
+                                | "high"
+                                | "low"
+                                | "";
                             setSortPrice(value);
-
-                            // optional: reset sort rating biar tidak bentrok
                             setSortRating("");
                         }}
                         renderValue={(selected) =>
@@ -345,8 +438,8 @@ export default function Homepage() {
                         <MenuItem value="" sx={{ opacity: 0.4 }}>
                             <em>All Price</em>
                         </MenuItem>
-                        <MenuItem value={"Highest"}>Highest Price</MenuItem>
-                        <MenuItem value={"Lowest"}>Lowest Price</MenuItem>
+                        <MenuItem value={"high"}>Highest Price</MenuItem>
+                        <MenuItem value={"low"}>Lowest Price</MenuItem>
                     </Select>
                 </FormControl>
 
@@ -356,41 +449,45 @@ export default function Homepage() {
                         value={rating ?? ""}
                         onChange={(e) => {
                             const value = e.target.value;
-                            setRating(value === 0 ? null : Number(value));
+                            if (typeof value === "string" && value === "") {
+                                setRating(null);
+                            } else {
+                                setRating(Number(value));
+                            }
                         }}
                         renderValue={(selected) => {
                             if (!selected) {
                                 return (
-                                    <span style={{ opacity: 0.6 }}>Rating</span>
+                                    <span style={{ opacity: 0.6 }}>
+                                        Rating
+                                    </span>
                                 );
                             }
-
                             return (
                                 <Rating
-                                    sx={{
-                                        color: "#16a34a",
-                                    }}
+                                    sx={{ color: "#16a34a" }}
                                     value={Number(selected)}
                                     readOnly
                                     size="small"
                                     icon={<StarIcon fontSize="inherit" />}
-                                    emptyIcon={<StarIcon fontSize="inherit" />}
+                                    emptyIcon={
+                                        <StarIcon fontSize="inherit" />
+                                    }
                                 />
                             );
                         }}
-                        MenuProps={{
-                            disableAutoFocusItem: true,
-                        }}
+                        MenuProps={{ disableAutoFocusItem: true }}
                     >
                         <MenuItem value="" sx={{ opacity: 0.4 }}>
                             <em>All Rating</em>
                         </MenuItem>
-
                         <MenuItem
                             disableRipple
                             sx={{
                                 cursor: "default",
-                                "&:hover": { backgroundColor: "transparent" },
+                                "&:hover": {
+                                    backgroundColor: "transparent",
+                                },
                             }}
                         >
                             <Box
@@ -409,33 +506,15 @@ export default function Homepage() {
                                         setRating(newValue);
                                     }}
                                     icon={<StarIcon fontSize="inherit" />}
-                                    emptyIcon={<StarIcon fontSize="inherit" />}
-                                    sx={{
-                                        color: "#16a34a",
-                                    }}
+                                    emptyIcon={
+                                        <StarIcon fontSize="inherit" />
+                                    }
+                                    sx={{ color: "#16a34a" }}
                                 />
                             </Box>
                         </MenuItem>
                     </Select>
                 </FormControl>
-
-                <Tooltip title="Apply Filter">
-                    <IconButton
-                        sx={{
-                            backgroundColor: "#1976d2",
-                            color: "white",
-                            height: 36,
-                            width: 36,
-                            borderRadius: 5,
-                            "&:hover": {
-                                backgroundColor: "#1565c0",
-                            },
-                        }}
-                    >
-                        <TuneIcon />
-                    </IconButton>
-                </Tooltip>
-                <Snackbar></Snackbar>
             </Box>
 
             <Typography variant="h5" marginTop={5}>
@@ -450,297 +529,205 @@ export default function Homepage() {
                     marginTop: 5,
                 }}
             >
-                {filteredProducts.map((product, index) => (
-                    <Card
-                        key={index}
-                        // elevation={2}
-                        sx={{
-                            cursor: "pointer",
-                            borderRadius: 4,
-                            boxShadow: "0px 0px 20px rgba(0, 0, 0, 0.27)",
-                            p: 2,
-                            backgroundColor: "#ffffff",
-                            transition: "0.3s",
-                            "&:hover": {
-                                transform: "translateY(-6px)",
-                                boxShadow: "0 8px 24px rgba(0,0,0,0.08)",
-                            },
-                        }}
-                        onClick={() => navigate(`/product/${product.id}`)}
-                    >
-                        <Box
-                            sx={{
-                                position: "relative",
-                                backgroundColor: "#f3f3f3",
-                                borderRadius: 3,
-                                height: 200,
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                overflow: "hidden", // penting!
-                                mb: 2,
-                            }}
-                        >
-                            <IconButton
-                                onClick={(e) => handleToggleWishlist(e, String(product.id))}
-                                sx={{
-                                    position: "absolute",
-                                    top: 8, right: 8, zIndex: 10,
-                                    backgroundColor: "white",
-                                    width: 30, height: 30,
-                                    boxShadow: "0 2px 6px rgba(0, 0, 0, 0.35)",
-                                    color: wishlistedIds.includes(String(product.id))
-                                        ? "rgba(255, 0, 0, 0.79)"
-                                        : "#ccc",
-                                    "&:hover": { backgroundColor: "white", scale: 1.15 },
-                                }}
-                            >
-                                <FavoriteIcon sx={{ fontSize: 16 }} />
-                            </IconButton>
+                {finalProducts.map((product) => {
+                    const avgRating = getAverageRating(product.ratings);
+                    const price = getMinPrice(product.variants);
+                    const image =
+                        product.variants?.[0]?.picture || banner1;
+                    const inStock = hasStock(product);
 
-                            <Box
-                                component="img"
-                                src={banner1}
-                                sx={{
-                                    width: "100%",
-                                    height: "100%",
-                                    objectFit: "contain",
-                                    padding: "16px",
-                                    transition: "transform 0.35s ease",
-
-                                    ".MuiCard-root:hover &": {
-                                        transform: "scale(1.08)",
-                                    },
-                                }}
-                            />
-                        </Box>
-
-                        <Box
-                            sx={{
-                                display: "flex",
-                                justifyContent: "space-between",
-                            }}
-                        >
-                            <Typography
-                                variant="subtitle1"
-                                sx={{ fontWeight: 600 }}
-                            >
-                                {product.name}
-                            </Typography>
-
-                            <Typography
-                                variant="subtitle1"
-                                sx={{ fontWeight: 700 }}
-                            >
-                                ${product.price}.00
-                            </Typography>
-                        </Box>
-
-                        <Typography
-                            variant="body2"
-                            sx={{ color: "#757575", mt: 0.5 }}
-                        >
-                            High quality wireless audio
-                        </Typography>
-
-                        <Box
-                            sx={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: 1,
-                                mt: 1,
-                            }}
-                        >
-                            <Rating
-                                value={product.rating}
-                                precision={0.1}
-                                readOnly
-                                size="small"
-                                sx={{
-                                    color: "#16a34a",
-                                }}
-                            />
-                            <Typography
-                                variant="caption"
-                                sx={{ color: "#16a34a" }}
-                            >
-                                (121)
-                            </Typography>
-                        </Box>
-
-                        <Box sx={{ mt: 2 }}>
-                            <Button
-                                fullWidth
-                                sx={{
-                                    border: "1px solid #0f5132",
-                                    borderRadius: "999px",
-                                    textTransform: "none",
-                                    fontSize: 13,
-                                    fontWeight: 600,
-                                    py: 0.8,
-                                    color: "#0f5132",
-                                    overflow: "hidden", // penting untuk ripple biar clipped
-                                    "&:hover": {
-                                        backgroundColor: "#0f5132",
-                                        color: "white",
-                                    },
-                                }}
-                            >
-                                Add to Cart
-                            </Button>
-                        </Box>
-                    </Card>
-                ))}
-            </Box>
-            <Typography variant="h5" sx={{ mt: 8, mb: 2 }}>
-                <strong>Recently Viewed</strong>
-            </Typography>
-
-            <Swiper
-                slidesPerView={4.2}
-                spaceBetween={20}
-                modules={[Scrollbar]}
-                scrollbar={{
-                    draggable: true,
-                    hide: false,
-                }}
-                style={{
-                    paddingBottom: "30px", // space buat scrollbar
-                }}
-            >
-                {recentProductsDummy.map((item, index) => (
-                    <SwiperSlide key={index}>
+                    return (
                         <Card
+                            key={product.product_id}
                             sx={{
-                                borderRadius: 4,
-                                p: 2,
-                                backgroundColor: "#fff",
-                                transition: "all 0.3s ease",
                                 cursor: "pointer",
-
+                                borderRadius: 4,
+                                boxShadow:
+                                    "0px 0px 20px rgba(0, 0, 0, 0.27)",
+                                p: 2,
+                                backgroundColor: "#ffffff",
+                                transition: "0.3s",
                                 "&:hover": {
                                     transform: "translateY(-6px)",
-                                    boxShadow: "0 12px 32px rgba(0,0,0,0.12)",
+                                    boxShadow:
+                                        "0 8px 24px rgba(0,0,0,0.08)",
                                 },
                             }}
+                            onClick={() =>
+                                navigate(
+                                    `/product/${product.product_id}`
+                                )
+                            }
                         >
-                            {/* IMAGE CONTAINER */}
                             <Box
                                 sx={{
                                     position: "relative",
-                                    backgroundColor: "#f5f5f5",
-                                    borderRadius: 2,
-                                    height: 150,
+                                    backgroundColor: "#f3f3f3",
+                                    borderRadius: 3,
+                                    height: 200,
                                     display: "flex",
                                     alignItems: "center",
                                     justifyContent: "center",
+                                    overflow: "hidden",
                                     mb: 2,
                                 }}
                             >
-                                {/* FAVORITE */}
                                 <IconButton
+                                    onClick={(e) => {
+                                        handleToggleWishlist(
+                                            e,
+                                            product.product_id
+                                        );
+                                    }}
                                     sx={{
                                         position: "absolute",
                                         top: 8,
                                         right: 8,
+                                        zIndex: 2,
                                         backgroundColor: "white",
-                                        width: 28,
-                                        height: 28,
-                                        border: "1px solid #ddd",
+                                        width: 30,
+                                        height: 30,
+                                        boxShadow:
+                                            "0 2px 6px rgba(0, 0, 0, 0.35)",
+                                        color: wishlistedIds.includes(
+                                            product.product_id
+                                        )
+                                            ? "rgba(255, 0, 0, 0.79)"
+                                            : "#ccc",
+                                        "&:hover": {
+                                            backgroundColor: "white",
+                                        },
                                     }}
                                 >
-                                    <FavoriteBorderIcon fontSize="small" />
+                                    ❤
                                 </IconButton>
+
+                                {/* Out of Stock badge */}
+                                {!inStock && (
+                                    <Box
+                                        sx={{
+                                            position: "absolute",
+                                            top: 8,
+                                            left: 8,
+                                            zIndex: 2,
+                                            bgcolor: "#d32f2f",
+                                            color: "white",
+                                            px: 1,
+                                            py: 0.3,
+                                            borderRadius: 1,
+                                            fontSize: 11,
+                                            fontWeight: 700,
+                                        }}
+                                    >
+                                        Out of Stock
+                                    </Box>
+                                )}
 
                                 <Box
                                     component="img"
-                                    src={banner1}
+                                    src={image}
                                     sx={{
-                                        maxHeight: 160,
+                                        width: "100%",
+                                        height: "100%",
                                         objectFit: "contain",
-                                        transition: "0.3s",
-
+                                        padding: "16px",
+                                        transition:
+                                            "transform 0.35s ease",
                                         ".MuiCard-root:hover &": {
-                                            transform: "scale(1.05)",
+                                            transform: "scale(1.08)",
                                         },
                                     }}
                                 />
                             </Box>
 
-                            {/* TITLE + PRICE */}
-                            <Box
-                                sx={{
-                                    display: "flex",
-                                    justifyContent: "space-between",
-                                    mb: 0.5,
-                                }}
-                            >
-                                <Typography fontSize={14} fontWeight={600}>
-                                    {item.name}
+                            <Box>
+                                <Typography
+                                    variant="subtitle1"
+                                    sx={{
+                                        fontWeight: 500,
+                                        lineHeight: 1.2,
+                                        fontSize: 15,
+                                        whiteSpace: "nowrap",
+                                        overflow: "hidden",
+                                        textOverflow: "ellipsis",
+                                    }}
+                                    title={product.name}
+                                >
+                                    {product.name}
                                 </Typography>
-                                <Typography fontSize={14} fontWeight={700}>
-                                    ${item.price}.00
+
+                                <Typography
+                                    variant="subtitle1"
+                                    sx={{ fontWeight: 700, mt: 0.5 }}
+                                >
+                                    {formatPrice(price)}
                                 </Typography>
                             </Box>
 
-                            {/* DESCRIPTION */}
                             <Typography
-                                fontSize={12}
-                                sx={{ color: "#777", mb: 1 }}
+                                variant="body2"
+                                sx={{ color: "#757575", mt: 0.5 }}
                             >
-                                Organic Cotton, fairtrade certified
+                                {product.description}
                             </Typography>
 
-                            {/* RATING */}
                             <Box
                                 sx={{
                                     display: "flex",
                                     alignItems: "center",
-                                    mb: 2,
+                                    gap: 1,
+                                    mt: 1,
                                 }}
                             >
                                 <Rating
-                                    value={4.5}
+                                    value={avgRating}
                                     precision={0.1}
                                     readOnly
                                     size="small"
-                                    sx={{ color: "#22c55e" }}
+                                    sx={{ color: "#16a34a" }}
                                 />
                                 <Typography
-                                    fontSize={12}
-                                    sx={{ color: "#22c55e", ml: 1 }}
+                                    variant="caption"
+                                    sx={{ color: "#16a34a" }}
                                 >
-                                    (121)
+                                    ({product.ratings?.length || 0})
                                 </Typography>
                             </Box>
 
-                            {/* BUTTON */}
                             <Box sx={{ mt: 2 }}>
-                                <Box
+                                <Button
+                                    fullWidth
+                                    disabled={!inStock}
+                                    onClick={(e) =>
+                                        handleAddToCart(e, product)
+                                    }
                                     sx={{
                                         border: "1px solid #0f5132",
-                                        borderRadius: 50,
-                                        textAlign: "center",
-                                        py: 0.8,
+                                        borderRadius: "999px",
+                                        textTransform: "none",
                                         fontSize: 13,
                                         fontWeight: 600,
-                                        cursor: "pointer",
-                                        transition: "all 0.25s ease",
-
+                                        py: 0.8,
+                                        color: "#0f5132",
                                         "&:hover": {
-                                            backgroundColor: "#16a34a",
+                                            backgroundColor: "#0f5132",
                                             color: "white",
-                                            borderColor: "#16a34a",
+                                        },
+                                        "&.Mui-disabled": {
+                                            borderColor: "#ccc",
+                                            color: "#999",
                                         },
                                     }}
                                 >
-                                    Add to Cart
-                                </Box>
+                                    {inStock
+                                        ? "Add to Cart"
+                                        : "Out of Stock"}
+                                </Button>
                             </Box>
                         </Card>
-                    </SwiperSlide>
-                ))}
-            </Swiper>
+                    );
+                })}
+            </Box>
         </div>
     );
 }

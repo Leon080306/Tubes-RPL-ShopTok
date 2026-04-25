@@ -12,7 +12,7 @@ import {
 } from "@mui/material";
 import { useEffect, useState } from "react";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import { type Address } from "../type";
+import { type Address, type AddressFormState } from "../type";
 import { MapContainer, Marker, TileLayer, useMap, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
@@ -21,7 +21,7 @@ import markerShadow from "leaflet/dist/images/marker-shadow.png";
 import "leaflet/dist/leaflet.css";
 
 interface AddressFormProps {
-  initialData?: Address;
+  initialData?: AddressFormState;
   onSubmit: (data: Address) => void;
   onBack: () => void;
   title: string;
@@ -35,11 +35,8 @@ L.Icon.Default.mergeOptions({
   shadowUrl: markerShadow
 });
 
-function parseAddress(data: any): Address {
+function parseAddress(data: any): AddressFormState {
   const addr = data.address;
-
-  console.log(addr)
-
   return {
     id: crypto.randomUUID(),
     name: "",
@@ -49,9 +46,13 @@ function parseAddress(data: any): Address {
     city: addr.city || addr.town || addr.county || "",
     district: addr.suburb || addr.village || "",
     postalCode: addr.postcode || "",
-    fullAddress: (addr.road || "") + (addr.house_number ? ", " + addr.house_number : "") + (addr.amenity ? ", " + addr.amenity : ""),
-    isDefault: false
-  }
+    fullAddress: [
+      addr.amenity,
+      addr.road,
+      addr.house_number
+    ].filter(Boolean).join(", "),
+    isDefault: false,
+  };
 }
 
 function MapController({ position }: { position: [number, number] }) {
@@ -64,26 +65,24 @@ function MapController({ position }: { position: [number, number] }) {
   return null;
 }
 
+// In LocationMarker, rename the prop for clarity
 function LocationMarker({
   setPosition,
-  setParsedAddress
+  onAddressParsed  // renamed
 }: {
   setPosition: (pos: [number, number]) => void;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  setParsedAddress: (addr: any) => void;
+  onAddressParsed: (addr: AddressFormState) => void;
 }) {
   useMapEvents({
     async click(e) {
       const { lat, lng } = e.latlng;
-
       setPosition([lat, lng]);
 
       const res = await fetch(
         `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`
       );
-
       const data = await res.json();
-      setParsedAddress(parseAddress(data));
+      onAddressParsed(parseAddress(data));
     }
   });
 
@@ -91,7 +90,7 @@ function LocationMarker({
 }
 
 export default function AddressForm({ initialData, onSubmit, onBack, title }: AddressFormProps) {
-  const [formData, setFormData] = useState<Address>(
+  const [formData, setFormData] = useState<AddressFormState>(
     initialData || {
       id: crypto.randomUUID(),
       name: "",
@@ -122,7 +121,18 @@ export default function AddressForm({ initialData, onSubmit, onBack, title }: Ad
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(formData);
+
+    const payload: Address = {
+      full_name: formData.receiver,
+      address: formData.fullAddress,
+      province: formData.province,
+      city: formData.city,
+      sub_district: formData.district,
+      phone_number: formData.phone,
+      is_default: formData.isDefault,
+    };
+
+    onSubmit(payload);
   };
 
   const getCurrentLocation = () => {
@@ -139,7 +149,14 @@ export default function AddressForm({ initialData, onSubmit, onBack, title }: Ad
       const data = await res.json();
       const parsed = parseAddress(data);
 
-      setFormData(parsed);
+      setFormData((prev) => ({
+        ...prev,
+        province: parsed.province,
+        city: parsed.city,
+        district: parsed.district,
+        postalCode: parsed.postalCode,
+        fullAddress: parsed.fullAddress,
+      }));
     });
   };
 
@@ -190,7 +207,16 @@ export default function AddressForm({ initialData, onSubmit, onBack, title }: Ad
 
               <LocationMarker
                 setPosition={setPosition}
-                setParsedAddress={setFormData}
+                onAddressParsed={(parsed) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    province: parsed.province,
+                    city: parsed.city,
+                    district: parsed.district,
+                    postalCode: parsed.postalCode,
+                    fullAddress: parsed.fullAddress,
+                  }))
+                }
               />
 
               <MapController position={position} />
@@ -233,14 +259,6 @@ export default function AddressForm({ initialData, onSubmit, onBack, title }: Ad
           />
 
           <Typography variant="subtitle2" color="text.secondary" sx={{ pt: 2 }}>ALAMAT</Typography>
-          <TextField
-            fullWidth
-            label="Nama Alamat"
-            name="name"
-            value={formData.name}
-            onChange={handleChange}
-            required
-          />
           <Stack direction="row" spacing={2}>
             <TextField
               fullWidth

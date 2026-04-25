@@ -101,7 +101,7 @@
 // // Export Reducer
 // export const cartReducer = cartSlice.reducer;
 
-import { createAsyncThunk, createSlice} from "@reduxjs/toolkit";
+import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import type { PayloadAction } from "@reduxjs/toolkit";
 import type { CartItem } from "../type";
 
@@ -135,35 +135,35 @@ export const fetchCart = createAsyncThunk(
 );
 
 export const updateCartItem = createAsyncThunk(
-    "cart/updateCartItem",
-    async (
-        { user_id, variant_id, quantity, is_selected, skipRefetch = false }: { 
-            user_id: string; 
-            variant_id: string; 
-            quantity?: number; 
-            is_selected?: boolean 
-            skipRefetch?: boolean;
-        },
-        { dispatch, rejectWithValue }
-    ) => {
-        try {
-            const res = await fetch(`/api/cart/${variant_id}?user_id=${user_id}`, {
-                method: "PATCH",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ quantity, is_selected })
-            });
+  "cart/updateCartItem",
+  async (
+    { user_id, variant_id, quantity, is_selected, skipRefetch = false }: {
+      user_id: string;
+      variant_id: string;
+      quantity?: number;
+      is_selected?: boolean
+      skipRefetch?: boolean;
+    },
+    { dispatch, rejectWithValue }
+  ) => {
+    try {
+      const res = await fetch(`/api/cart/${variant_id}?user_id=${user_id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ quantity, is_selected })
+      });
 
-            if (!res.ok) throw new Error("Gagal update cart");
+      if (!res.ok) throw new Error("Gagal update cart");
 
-            // refetch biar UI sinkron
-            if (!skipRefetch) {
-                dispatch(fetchCart(user_id));
-            }
+      // refetch biar UI sinkron
+      if (!skipRefetch) {
+        dispatch(fetchCart(user_id));
+      }
 
-        } catch (err: any) {
-            return rejectWithValue(err.message);
-        }
+    } catch (err: any) {
+      return rejectWithValue(err.message);
     }
+  }
 );
 
 export const deleteCartItem = createAsyncThunk(

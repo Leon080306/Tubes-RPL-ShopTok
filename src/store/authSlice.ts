@@ -114,7 +114,7 @@ export const authSlice = createSlice({
     },
     sendNewMessage: (
       state,
-      action: PayloadAction<{ shopId: number; message: string }>,
+      action: PayloadAction<{ shopId: string; message: string }>,
     ) => {
       if (state.userInfo && state.userInfo.chats) {
         const chatIndex = state.userInfo.chats.findIndex(
@@ -122,7 +122,7 @@ export const authSlice = createSlice({
         );
         if (chatIndex !== -1) {
           const newMessage: ChatMessage = {
-            chat_id: Date.now(), 
+            chat_id: Date.now().toString(),
             sender_role: "customer",
             message: action.payload.message,
             created_at: new Date().toISOString(),

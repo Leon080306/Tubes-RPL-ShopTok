@@ -1,12 +1,57 @@
- export type BasicMenuProps = {
+export type BasicMenuProps = {
     label: string;
     menuItems: Category[];
     className?: string;
     onSelect?: (value: string) => void;
 }
 
-export type Category = {
-    name: string;
+export type Shop = {
+    shop_id: string
+    name: string
+}
+
+export type Product = {
+    product_id: string
+    shop_id: string
+    category_id: string
+    name: string
+    description: string
+    view_count: number
+    ratings?: Rating[]
+    variants?: ProductVariant[]
+    category?: Category
+    shop?: ShopInfo
+}
+
+export type ProductVariant = {
+    variant_id: string
+    product_id: string
+    name: string
+    picture: string
+    stock: number
+    price: number
+    orderItems?: OrderItems[]
+}
+
+export type OrderItems = {
+    order_id: string
+    variant_id: string
+    quantity: number
+}
+
+export type Rating = {
+    user_id: string
+    rating_id: string
+    product_id: string
+    value: number
+    title: string
+    description: string
+    picture?: string
+    createdAt: string
+    user?: {
+        first_name: string
+        last_name: string
+    }
 }
 
 export type UserInfo = {
@@ -41,16 +86,32 @@ export type OrderStats = {
 }
 
 // ni buat setting addressnya
+// Internal form state (UI-facing)
+export type AddressFormState = {
+    id: string;
+    name: string;        // address label/nickname
+    receiver: string;    // maps to full_name
+    phone: string;       // maps to phone_number
+    province: string;
+    city: string;
+    district: string;    // maps to sub_district
+    postalCode: string;
+    fullAddress: string; // maps to address
+    isDefault: boolean;
+};
+
+// API/DB shape
 export type Address = {
-    address_id: string
-    user_id: string
-    full_name: string
-    address: string
-    province: string
-    city: string
-    subdistrict: string
-    is_default: boolean
-}
+    address_id?: string;
+    user_id?: string;
+    full_name: string;
+    address: string;
+    province: string;
+    city: string;
+    sub_district: string;
+    phone_number: string;
+    is_default: boolean;
+};
 
 export type CreditCard = {
     id: string
@@ -73,54 +134,61 @@ export type AuthState = {
 }
 
 export type ChatMessage = {
-    chat_id: number
-    sender_role: 'customer' | 'seller'
-    message: string
-    created_at: string 
-}
+    chat_id: string;       // UUID
+    sender_role: string;
+    message: string;
+    created_at: string;
+};
 
 export type ChatSession = {
-    shop_id: number
-    shop_name: string
-    shop_logo?: string
-    last_message: string
-    unread_count: number
-    messages: ChatMessage[]
-}
+    shop_id: string;       // UUID
+    shop_name: string;
+    last_message: string;
+    unread_count: number;
+    messages: ChatMessage[];
+};
 
 export type ShopInfo = {
-    shop_id: string      
+    shop_id: string
     owner_id: string
     name: string
-    description?: string 
+    description?: string
     profile_pic?: string
     banner?: string
     is_approved: boolean
     status: "active" | "suspended"
-    
-    owner?: UserInfo 
-    products?: any[] // ntr diganti pake type  Product. blom ada soalnya
+
+    owner?: UserInfo
+    products?: Product // ntr diganti pake type  Product. blom ada soalnya
     createdAt?: string
     updatedAt?: string
 }
 
+export type Category = {
+    category_id: string;
+    name: string;
+    icon: string;
+    parent_id?: string | null;
+    totalProducts?: number
+};
+
 export type CartItem = {
-    user_id: string;
     variant_id: string;
     quantity: number;
     is_selected: boolean;
     variant: {
         variant_id: string;
         name: string;
-        price: string; 
+        price: string;
         picture: string;
+        stock: number;
         product: {
             name: string;
             shop: {
                 name: string;
-            }
-        }
-    }
+            };
+        };
+    };
 }
 
 export type OrderItem = {
@@ -151,7 +219,7 @@ export type OrderDetail = {
     createdAt: string
     updatedAt: string
     address: Address
-    shop: {                  
+    shop: {
         shop_id: string
         name: string
         profile_pic?: string
