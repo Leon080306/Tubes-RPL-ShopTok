@@ -41,11 +41,7 @@ import LocalShippingRoundedIcon from "@mui/icons-material/LocalShippingRounded";
 import ReceiptRoundedIcon from "@mui/icons-material/ReceiptRounded";
 import CheckCircleRoundedIcon from "@mui/icons-material/CheckCircleRounded";
 
-// redux
-import { useAppDispatch } from "../../hooks/useAppDispatch";
 import { useAppSelector } from "../../hooks/useAppSelector";
-import { fetchShopOrders, updateOrderStatus, cancelOrder } from "../../store/orderSlice";
-import type { OrderDetail } from "../../type";
 
 // ─── Brand tokens ─────────────────────────────────────────────────────────────
 const PRIMARY = "#003f29" as const;
@@ -84,15 +80,16 @@ interface EditDraft {
     notes: string;
 }
 
-const ALL_STATUSES: OrderStatus[] = ["Paid", "Pending", "Shipped", "Delivered", "Cancelled", "Refunded"];
-
 const EMPTY_DRAFT: EditDraft = { status: "Pending", tracking: "", notes: "" };
+
+const ALL_STATUSES: OrderStatus[] = ["Paid", "Pending", "Shipped", "Delivered", "Cancelled", "Refunded"];
 
 const fmtPrice = (n: number) =>
     `Rp ${n >= 1000 ? `${(n / 1000).toFixed(1)}Jt` : `${n}K`}`;
 
 const fmtDate = (iso: string) =>
     new Date(iso).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+
 
 // ─── Status style map ──────────────────────────────────────────────────────────
 const STATUS_SX: Record<OrderStatus, SxProps<Theme>> = {
@@ -438,10 +435,12 @@ function DeleteDialog({ open, orderId, onConfirm, onClose }: DeleteDialogProps) 
 const PAGE_SIZE = 8;
 
 export default function OrdersPage() {
-    const dispatch = useAppDispatch();
-    const { orders: rawOrders, status: fetchStatus } = useAppSelector(state => state.order);
-    const shopId = useAppSelector(state => state.auth.userInfo?.shop_info?.shop_id ?? '');
+     const { userInfo } = useAppSelector((state) => state.auth);
+    const user_id = userInfo?.user_id;
+    const shopId = userInfo?.shop_info?.shop_id ?? '';
 
+    // ganti useState(SEED_ORDERS) → useState([])
+    const [orders, setOrders] = useState<Order[]>([]);
     const [search, setSearch] = useState("");
     const [statusFilter, setStatus] = useState<OrderStatus | "All">("All");
     const [page, setPage] = useState(1);
@@ -452,47 +451,105 @@ export default function OrdersPage() {
     const [draft, setDraft] = useState<EditDraft>(EMPTY_DRAFT);
     const [deleteTarget, setDeleteTarget] = useState<Order | null>(null);
 
-    // Fetch dari backend
+    // ================= FETCH SHOP ORDERS =================
     useEffect(() => {
-        if (shopId) {
-            const backendStatus = statusFilter === "All" ? "all"
-                : statusFilter === "Pending" ? "pending"
-                : statusFilter === "Delivered" ? "completed"
-                : statusFilter === "Cancelled" ? "cancelled"
-                : "all";
-            dispatch(fetchShopOrders({ shop_id: shopId, statusFilter: backendStatus }));
+        if (!shopId || !user_id) return;
+        const getOrders = async () => {
+            try {
+                const backendStatus =
+                    statusFilter === "All" ? "all"
+                    : statusFilter === "Pending" ? "pending"
+                    : statusFilter === "Delivered" ? "completed"
+                    : statusFilter === "Cancelled" ? "cancelled"
+                    : "all";
+
+                const params = backendStatus !== 'all'
+                    ? `?seller_id=${user_id}&status=${backendStatus}`
+                    : `?seller_id=${user_id}`;
+
+                const res = await fetch(`/api/order/shop/${shopId}${params}`);
+                const data = await res.json();
+
+                const mapped: Order[] = data.data.map((o: any) => ({
+                    id: o.order_id,
+                    customer: `${o.customer?.first_name ?? ''} ${o.customer?.last_name ?? ''}`.trim() || 'Customer',
+                    avatar: [
+                        o.customer?.first_name?.[0] ?? 'C',
+                        o.customer?.last_name?.[0] ?? ''
+                    ].join('').toUpperCase(),
+                    city: o.address?.city ?? '—',
+                    phone: o.customer?.phone_number ?? '—',
+                    date: o.createdAt ?? '',
+                    items: o.orderItems.map((item: any) => ({
+                        name: item.variant.product.name,
+                        emoji: '📦',
+                        qty: item.quantity,
+                        price: Number(item.variant.price),
+                    })),
+                    total: o.amount_paid,
+                    status: (
+                        o.status === 'completed' ? 'Delivered'
+                        : o.status === 'cancelled' ? 'Cancelled'
+                        : 'Pending'
+                    ) as OrderStatus,
+                    payment: '—' as PaymentMethod,
+                    tracking: '',
+                    notes: '',
+                }));
+
+                setOrders(mapped);
+            } catch (error) {
+                console.error(error);
+            }
+        };
+        getOrders();
+    }, [shopId, statusFilter, user_id]);
+
+    // ================= UPDATE STATUS =================
+    const handleEditSubmit = async () => {
+        const backendStatus =
+            draft.status === 'Delivered' ? 'completed'
+            : draft.status === 'Cancelled' ? 'cancelled'
+            : 'pending';
+
+        try {
+            await fetch(`/api/order/status/${editingId}`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ status: backendStatus, seller_id: user_id }),
+            });
+            // update state lokal
+            setOrders(prev => prev.map(o =>
+                o.id === editingId
+                    ? { ...o, status: draft.status, tracking: draft.tracking, notes: draft.notes }
+                    : o
+            ));
+        } catch (error) {
+            console.error(error);
         }
-    }, [shopId, statusFilter, dispatch]);
+        setEditOpen(false);
+    };
 
-    // Map OrderDetail → Order (shape yang dipakai UI)
-    const orders: Order[] = useMemo(() => rawOrders.map(o => ({
-        id: o.order_id,
-        customer: `${(o as any).customer?.first_name ?? ''} ${(o as any).customer?.last_name ?? ''}`.trim() || 'Customer',
-        avatar: [
-            (o as any).customer?.first_name?.[0] ?? 'C',
-            (o as any).customer?.last_name?.[0] ?? '',
-        ].join('').toUpperCase(),
-        city: o.address?.city ?? '—',
-        phone: (o as any).customer?.phone_number ?? '—',
-        date: o.createdAt ?? '',
-        items: o.orderItems.map(item => ({
-            name: item.variant.product.name,
-            emoji: '📦',
-            qty: item.quantity,
-            price: Number(item.variant.price),
-        })),
-        total: o.amount_paid,
-        status: (
-            o.status === 'completed' ? 'Delivered'
-            : o.status === 'cancelled' ? 'Cancelled'
-            : 'Pending'
-        ) as OrderStatus,
-        payment: '—' as PaymentMethod,
-        tracking: '',
-        notes: '',
-    })), [rawOrders]);
+    // ================= CANCEL/DELETE =================
+    const handleDelete = async () => {
+        if (!deleteTarget) return;
+        try {
+            await fetch(`/api/order/cancel/${deleteTarget.id}?customer_id=${user_id}`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ status: 'cancelled', seller_id: user_id }),
+            });
+            // tandai cancelled di state lokal
+            setOrders(prev => prev.map(o =>
+                o.id === deleteTarget.id ? { ...o, status: 'Cancelled' } : o
+            ));
+        } catch (error) {
+            console.error(error);
+        }
+        setDeleteTarget(null);
+    };
 
-    // ── Derived ─────────────────────────────────────────────────────────────
+    // ── Derived ────────────────────────────────────────────────────────────────
     const filtered = useMemo(() => {
         const q = search.toLowerCase();
         return orders.filter((o) => {
@@ -510,7 +567,7 @@ export default function OrdersPage() {
     const shippedCount = orders.filter((o) => o.status === "Shipped").length;
     const deliveredCount = orders.filter((o) => o.status === "Delivered").length;
 
-    // ── Handlers ─────────────────────────────────────────────────────────────
+    // ── Handlers ───────────────────────────────────────────────────────────────
     const openEdit = (o: Order) => {
         setDraft({ status: o.status, tracking: o.tracking, notes: o.notes });
         setEditingId(o.id);
@@ -522,24 +579,9 @@ export default function OrdersPage() {
         setDraft((prev) => ({ ...prev, [field]: value }));
     };
 
-    const handleEditSubmit = async () => {
-        // Map UI status → backend status
-        const backendStatus = draft.status === 'Delivered' ? 'completed'
-            : draft.status === 'Cancelled' ? 'cancelled'
-            : 'pending';
-        await dispatch(updateOrderStatus({ order_id: editingId, status: backendStatus }));
-        setEditOpen(false);
-    };
-
     const openDelete = (o: Order) => {
         setViewOrder(null);
         setDeleteTarget(o);
-    };
-
-    const handleDelete = async () => {
-        if (!deleteTarget) return;
-        await dispatch(cancelOrder(deleteTarget.id));
-        setDeleteTarget(null);
     };
 
     const handleSearchChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -547,11 +589,272 @@ export default function OrdersPage() {
         setPage(1);
     };
 
-    // ── Render ────────────────────────────────────────────────────────────────
+    // ── Render ─────────────────────────────────────────────────────────────────
     return (
         <Box sx={{ flex: 1, overflowY: "auto", p: 3, bgcolor: BG }}>
-            {/* ... sisa JSX sama persis, tidak perlu diubah ... */}
-            {/* Hanya ganti SEED_ORDERS → tidak ada, karena `orders` sekarang dari Redux */}
+
+            {/* Page header */}
+            <Stack direction="row" justifyContent="space-between" alignItems="flex-start" mb={2.5}>
+                <Box>
+                    <Typography sx={{ fontSize: 20, fontWeight: 700, color: "#0d1f13" }}>Orders</Typography>
+                    <Typography sx={{ fontSize: 13, color: "#64748b", mt: 0.3 }}>
+                        Manage and track all customer orders
+                    </Typography>
+                </Box>
+            </Stack>
+
+            {/* Summary cards */}
+            <Grid container spacing={1.75} mb={2.5}>
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                    <SummaryCard
+                        icon={<ShoppingBagRoundedIcon sx={{ fontSize: 18 }} />}
+                        iconBg="#dcfce7" iconColor="#16a34a"
+                        label="Total Orders" value={orders.length}
+                        sub={`${deliveredCount} delivered`}
+                    />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                    <SummaryCard
+                        icon={<AttachMoneyRoundedIcon sx={{ fontSize: 18 }} />}
+                        iconBg="#dbeafe" iconColor="#1d4ed8"
+                        label="Total Revenue" value={fmtPrice(totalRevenue)}
+                        sub="all orders"
+                    />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                    <SummaryCard
+                        icon={<HourglassTopRoundedIcon sx={{ fontSize: 18 }} />}
+                        iconBg="#fef9c3" iconColor="#854d0e"
+                        label="Pending" value={pendingCount}
+                        sub="awaiting action"
+                    />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                    <SummaryCard
+                        icon={<LocalShippingRoundedIcon sx={{ fontSize: 18 }} />}
+                        iconBg="#f3e8ff" iconColor="#7e22ce"
+                        label="In Transit" value={shippedCount}
+                        sub="currently shipping"
+                    />
+                </Grid>
+            </Grid>
+
+            {/* Table card */}
+            <Card>
+                <CardContent sx={{ p: "0 !important" }}>
+
+                    {/* Toolbar */}
+                    <Box sx={{ px: 2.5, pt: 2.5, pb: 2, borderBottom: "1px solid #f1f5f9" }}>
+                        <Stack direction={{ xs: "column", sm: "row" }} gap={1.5} alignItems={{ sm: "center" }}>
+                            {/* Search */}
+                            <Box
+                                sx={{
+                                    display: "flex", alignItems: "center", gap: 1,
+                                    bgcolor: BG, borderRadius: 2, px: 1.5, py: 0.85,
+                                    flex: 1, maxWidth: 320,
+                                }}
+                            >
+                                <SearchRoundedIcon sx={{ fontSize: 17, color: "#94a3b8" }} />
+                                <InputBase
+                                    placeholder="Search by order ID or customer…"
+                                    sx={{ fontSize: 13, flex: 1 }}
+                                    value={search}
+                                    onChange={handleSearchChange}
+                                />
+                            </Box>
+
+                            {/* Status filter */}
+                            <Stack direction="row" gap={1} alignItems="center">
+                                <FilterListRoundedIcon sx={{ fontSize: 16, color: "#94a3b8" }} />
+                                <FormControl size="small" sx={{ minWidth: 150 }}>
+                                    <Select
+                                        value={statusFilter}
+                                        onChange={(e: SelectChangeEvent) => {
+                                            setStatus(e.target.value as OrderStatus | "All");
+                                            setPage(1);
+                                        }}
+                                        displayEmpty
+                                        sx={{ fontSize: 12.5, borderRadius: 1.5, bgcolor: "#fff" }}
+                                    >
+                                        <MenuItem value="All">All Statuses</MenuItem>
+                                        {ALL_STATUSES.map((s) => (
+                                            <MenuItem key={s} value={s} sx={{ fontSize: 12.5 }}>{s}</MenuItem>
+                                        ))}
+                                    </Select>
+                                </FormControl>
+                            </Stack>
+
+                            <Typography sx={{ fontSize: 12, color: "#94a3b8", ml: "auto", whiteSpace: "nowrap" }}>
+                                {filtered.length} result{filtered.length !== 1 ? "s" : ""}
+                            </Typography>
+                        </Stack>
+                    </Box>
+
+                    {/* Table */}
+                    <Table size="small">
+                        <TableHead>
+                            <TableRow sx={{ bgcolor: "#fafafa" }}>
+                                {["Order ID", "Customer", "Date", "Items", "Total", "Payment", "Status", "Actions"].map((h) => (
+                                    <TableCell key={h}
+                                        sx={{
+                                            fontSize: 11, color: "#94a3b8", fontWeight: 600,
+                                            textTransform: "uppercase", letterSpacing: 0.5,
+                                            borderBottom: "1px solid #f1f5f9", py: 1.25,
+                                            whiteSpace: "nowrap",
+                                        }}
+                                    >
+                                        {h}
+                                    </TableCell>
+                                ))}
+                            </TableRow>
+                        </TableHead>
+
+                        <TableBody>
+                            {paginated.length === 0 ? (
+                                <TableRow>
+                                    <TableCell colSpan={8} sx={{ textAlign: "center", py: 5, color: "#94a3b8", fontSize: 13 }}>
+                                        No orders match your filters.
+                                    </TableCell>
+                                </TableRow>
+                            ) : (
+                                paginated.map((o) => {
+                                    const ac = avatarColor(o.customer);
+                                    return (
+                                        <TableRow key={o.id}
+                                            sx={{
+                                                "&:hover td": { bgcolor: "#f8fafc" },
+                                                "&:last-child td": { border: 0 },
+                                                cursor: "pointer",
+                                            }}
+                                            onClick={() => setViewOrder(o)}
+                                        >
+                                            {/* Order ID */}
+                                            <TableCell sx={{ borderBottom: "1px solid #f8fafc", py: 1.4 }}>
+                                                <Typography sx={{ fontSize: 13, fontWeight: 700, color: PRIMARY, fontFamily: "monospace" }}>
+                                                    {o.id}
+                                                </Typography>
+                                            </TableCell>
+
+                                            {/* Customer */}
+                                            <TableCell sx={{ borderBottom: "1px solid #f8fafc" }}>
+                                                <Stack direction="row" alignItems="center" gap={1.25}>
+                                                    <Avatar sx={{ width: 30, height: 30, bgcolor: ac.bg, color: ac.color, fontSize: 11, fontWeight: 700, borderRadius: 1.5 }}>
+                                                        {o.avatar}
+                                                    </Avatar>
+                                                    <Box>
+                                                        <Typography sx={{ fontSize: 13, fontWeight: 600, color: "#0d1f13", whiteSpace: "nowrap" }}>
+                                                            {o.customer}
+                                                        </Typography>
+                                                        <Typography sx={{ fontSize: 11, color: "#94a3b8" }}>{o.city}</Typography>
+                                                    </Box>
+                                                </Stack>
+                                            </TableCell>
+
+                                            {/* Date */}
+                                            <TableCell sx={{ fontSize: 12.5, color: "#64748b", borderBottom: "1px solid #f8fafc", whiteSpace: "nowrap" }}>
+                                                {fmtDate(o.date)}
+                                            </TableCell>
+
+                                            {/* Items preview */}
+                                            <TableCell sx={{ borderBottom: "1px solid #f8fafc" }}>
+                                                <Stack direction="row" alignItems="center" gap={0.5}>
+                                                    <Box sx={{ fontSize: 16, lineHeight: 1 }}>{o.items[0].emoji}</Box>
+                                                    {o.items.length > 1 && (
+                                                        <Typography sx={{ fontSize: 11.5, color: "#94a3b8" }}>
+                                                            +{o.items.length - 1}
+                                                        </Typography>
+                                                    )}
+                                                </Stack>
+                                            </TableCell>
+
+                                            {/* Total */}
+                                            <TableCell sx={{ fontSize: 13, fontWeight: 700, color: "#0d1f13", borderBottom: "1px solid #f8fafc", whiteSpace: "nowrap" }}>
+                                                {fmtPrice(o.total)}
+                                            </TableCell>
+
+                                            {/* Payment */}
+                                            <TableCell sx={{ fontSize: 12.5, color: "#475569", borderBottom: "1px solid #f8fafc", whiteSpace: "nowrap" }}>
+                                                {o.payment}
+                                            </TableCell>
+
+                                            {/* Status */}
+                                            <TableCell sx={{ borderBottom: "1px solid #f8fafc" }}>
+                                                <Chip label={o.status} size="small"
+                                                    sx={{ height: 21, fontSize: 11, fontWeight: 600, borderRadius: "99px", ...STATUS_SX[o.status] }} />
+                                            </TableCell>
+
+                                            {/* Actions */}
+                                            <TableCell sx={{ borderBottom: "1px solid #f8fafc" }}
+                                                onClick={(e) => e.stopPropagation()}>
+                                                <Stack direction="row" gap={0.25}>
+                                                    <Tooltip title="View" placement="top">
+                                                        <IconButton size="small" onClick={() => setViewOrder(o)}
+                                                            sx={{ color: "#94a3b8", "&:hover": { color: PRIMARY, bgcolor: "#f0fdf4" } }}>
+                                                            <VisibilityRoundedIcon sx={{ fontSize: 16 }} />
+                                                        </IconButton>
+                                                    </Tooltip>
+                                                    <Tooltip title="Edit" placement="top">
+                                                        <IconButton size="small" onClick={() => openEdit(o)}
+                                                            sx={{ color: "#94a3b8", "&:hover": { color: "#1d4ed8", bgcolor: "#eff6ff" } }}>
+                                                            <EditRoundedIcon sx={{ fontSize: 16 }} />
+                                                        </IconButton>
+                                                    </Tooltip>
+                                                    <Tooltip title="Delete" placement="top">
+                                                        <IconButton size="small" onClick={() => openDelete(o)}
+                                                            sx={{ color: "#94a3b8", "&:hover": { color: "#ef4444", bgcolor: "#fef2f2" } }}>
+                                                            <DeleteRoundedIcon sx={{ fontSize: 16 }} />
+                                                        </IconButton>
+                                                    </Tooltip>
+                                                </Stack>
+                                            </TableCell>
+                                        </TableRow>
+                                    );
+                                })
+                            )}
+                        </TableBody>
+                    </Table>
+
+                    {/* Pagination */}
+                    {totalPages > 1 && (
+                        <Box sx={{ display: "flex", justifyContent: "flex-end", px: 2.5, py: 2, borderTop: "1px solid #f1f5f9" }}>
+                            <Pagination
+                                count={totalPages}
+                                page={page}
+                                onChange={(_, v) => setPage(v)}
+                                size="small"
+                                sx={{
+                                    "& .MuiPaginationItem-root": { fontSize: 12 },
+                                    "& .Mui-selected": { bgcolor: `${PRIMARY} !important`, color: "#fff" },
+                                }}
+                            />
+                        </Box>
+                    )}
+                </CardContent>
+            </Card>
+
+            {/* ── Overlays ─────────────────────────────────────────────────────────── */}
+            <ViewDrawer
+                order={viewOrder}
+                onClose={() => setViewOrder(null)}
+                onEdit={openEdit}
+                onDelete={openDelete}
+            />
+
+            <EditDialog
+                open={editOpen}
+                draft={draft}
+                orderId={editingId}
+                onChange={handleDraftChange}
+                onSubmit={handleEditSubmit}
+                onClose={() => setEditOpen(false)}
+            />
+
+            <DeleteDialog
+                open={!!deleteTarget}
+                orderId={deleteTarget?.id ?? ""}
+                onConfirm={handleDelete}
+                onClose={() => setDeleteTarget(null)}
+            />
         </Box>
     );
 }

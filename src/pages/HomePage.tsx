@@ -23,9 +23,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router";
 
 import { useEffect } from "react";
-import { useAppDispatch } from "../hooks/useAppDispatch";
 import { useAppSelector } from "../hooks/useAppSelector";
-import { fetchWishlist, toggleWishlist } from "../store/wishlistSlice";
 import FavoriteIcon from "@mui/icons-material/Favorite";
 
 export default function Homepage() {
@@ -35,16 +33,44 @@ export default function Homepage() {
 
     const navigate = useNavigate();
 
-    const dispatch = useAppDispatch();
-    const { wishlistedIds } = useAppSelector(state => state.wishlist);
+    const { userInfo } = useAppSelector((state) => state.auth);
+    const user_id = userInfo?.user_id;
 
+    const [wishlistedIds, setWishlistedIds] = useState<string[]>([]);
+
+    // ================= FETCH WISHLIST =================
     useEffect(() => {
-        dispatch(fetchWishlist());
-    }, [dispatch]);
+        if (!user_id) return;
+        const getWishlist = async () => {
+            try {
+                const res = await fetch(`/api/wishlist?user_id=${user_id}`);
+                const data = await res.json();
+                setWishlistedIds(data.data.map((item: { product_id: string }) => item.product_id));
+            } catch (error) {
+                console.error(error);
+            }
+        };
+        getWishlist();
+    }, [user_id]);
 
-    const handleToggleWishlist = (e: React.MouseEvent, product_id: string) => {
+    // ================= TOGGLE WISHLIST =================
+    const handleToggleWishlist = async (e: React.MouseEvent, product_id: string) => {
         e.stopPropagation();
-        dispatch(toggleWishlist(product_id));
+        if (!user_id) return;
+        try {
+            await fetch(`/api/wishlist`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ user_id, product_id }),
+            });
+            setWishlistedIds(prev =>
+                prev.includes(product_id)
+                    ? prev.filter(id => id !== product_id)
+                    : [...prev, product_id]
+            );
+        } catch (error) {
+            console.error(error);
+        }
     };
 
     const dummy = [
@@ -455,7 +481,6 @@ export default function Homepage() {
                                 mb: 2,
                             }}
                         >
-                            // Ganti IconButton ❤ yang lama dengan ini:
                         <IconButton
                             onClick={(e) => handleToggleWishlist(e, String(product.id))}
                             sx={{

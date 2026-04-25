@@ -18,35 +18,118 @@ import banner1 from "../../assets/stock-images/home-bannerHeadset.jpg";
 import { useState } from "react";
 import { useNavigate } from "react-router";
 
-// redux
 import { useEffect } from "react";
-import { useAppDispatch } from "../../hooks/useAppDispatch";
 import { useAppSelector } from "../../hooks/useAppSelector";
-import { fetchWishlist, toggleWishlist } from "../../store/wishlistSlice";
 import FavoriteIcon from "@mui/icons-material/Favorite";
 
-export default function Wishlist() {
-    const dispatch = useAppDispatch();
-    const { items, wishlistedIds, status } = useAppSelector(state => state.wishlist);
+type WishlistVariant = {
+    variant_id: string;
+    name: string;
+    price: string;
+    picture: string;
+    stock: number;
+}
 
+type WishlistProduct = {
+    product_id: string;
+    name: string;
+    variants?: WishlistVariant[];
+}
+
+type WishlistItem = {
+    user_id: string;
+    product_id: string;
+    product: WishlistProduct;
+}
+
+export default function Wishlist() {
+    const { userInfo } = useAppSelector((state) => state.auth);
+    const user_id = userInfo?.user_id;
+    const navigate = useNavigate();
+
+    const [items, setItems] = useState<WishlistItem[]>([]);
+    const [wishlistedIds, setWishlistedIds] = useState<string[]>([]);
     const [rating, setRating] = useState<number | null>(null);
     const [sortPrice, setSortPrice] = useState<"high" | "low" | "">("");
     const [sortRating, setSortRating] = useState<"high" | "low" | "">("");
 
-    const navigate = useNavigate();
+    // ================= FETCH WISHLIST =================
+    const getWishlist = async () => {
+        if (!user_id) return;
+        try {
+            const res = await fetch(`/api/wishlist?user_id=${user_id}`);
+            const data = await res.json();
+            setItems(data.data);
+            setWishlistedIds(data.data.map((item: WishlistItem) => item.product_id));
+        } catch (error) {
+            console.error(error);
+        }
+    };
 
     useEffect(() => {
-        dispatch(fetchWishlist());
-    }, [dispatch]);
+        getWishlist();
+    }, [user_id]);
 
+    // ================= TOGGLE WISHLIST =================
+    const handleToggleWishlist = async (e: React.MouseEvent, product_id: string) => {
+        e.stopPropagation();
+        if (!user_id) return;
+        try {
+            await fetch(`/api/wishlist`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ user_id, product_id }),
+            });
+
+            // update state lokal
+            const isWishlisted = wishlistedIds.includes(product_id);
+            if (isWishlisted) {
+                setItems(prev => prev.filter(item => item.product_id !== product_id));
+                setWishlistedIds(prev => prev.filter(id => id !== product_id));
+            } else {
+                setWishlistedIds(prev => [...prev, product_id]);
+            }
+        } catch (error) {
+            console.error(error);
+        }
+    };
+
+    // Tambah handler ini di Wishlist.tsx
+    const handleAddToCart = async (e: React.MouseEvent, product: { id: string, variants?: WishlistVariant[] }) => {
+        e.stopPropagation();
+        if (!user_id) return;
+
+        const variant_id = product.variants?.[0]?.variant_id;
+        if (!variant_id) return alert("Produk tidak memiliki varian");
+
+        try {
+            const res = await fetch(`/api/cart`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ user_id, variant_id, quantity: 1 }),
+            });
+
+            if (!res.ok) {
+                const data = await res.json();
+                return alert(data.message);
+            }
+
+            alert("Berhasil ditambah ke cart!");
+        } catch (error) {
+            console.error(error);
+        }
+    };
+
+    // ================= FILTER + SORT =================
     const products = items.map(item => ({
         id: item.product_id,
         name: item.product.name,
-        price: item.product.variants?.[0]?.price 
-            ? Number(item.product.variants[0].price) 
+        price: item.product.variants?.[0]?.price
+            ? Number(item.product.variants[0].price)
             : 0,
         picture: item.product.variants?.[0]?.picture ?? '',
-        rating: 0,  // rating dari Ratings model, belum ada di response — bisa ditambah nanti
+        rating: 0,
+        variants: item.product.variants,
     }));
 
     const filteredProducts = products
@@ -60,78 +143,7 @@ export default function Wishlist() {
             if (sortRating === "high") return b.rating - a.rating;
             if (sortRating === "low") return a.rating - b.rating;
             return 0;
-    });
-
-    const handleToggleWishlist = (e: React.MouseEvent, product_id: string) => {
-        e.stopPropagation();
-        dispatch(toggleWishlist(product_id));
-    };
-
-    // const dummy = [
-    //     {
-    //         id: 1,
-    //         name: "Handphone",
-    //         price: 100,
-    //         rating: 4.5,
-    //     },
-    //     {
-    //         name: "Headset",
-    //         price: 80,
-    //         rating: 4.6,
-    //     },
-    //     {
-    //         name: "Keyboard",
-    //         price: 60,
-    //         rating: 3.2,
-    //     },
-    //     {
-    //         name: "iPhone 17 Pro Max",
-    //         price: 1000,
-    //         rating: 5,
-    //     },
-    //     {
-    //         name: "Handphone",
-    //         price: 100,
-    //         rating: 2.8,
-    //     },
-    //     {
-    //         name: "Headset",
-    //         price: 80,
-    //         rating: 1.5,
-    //     },
-    //     {
-    //         name: "Keyboard",
-    //         price: 60,
-    //         rating: 4.2,
-    //     },
-    //     {
-    //         name: "iPhone 17 Pro Max",
-    //         price: 1000,
-    //         rating: 5,
-    //     },
-    // ];
-
-    // const filteredProducts = dummy
-    //     .filter((item) => {
-    //         if (!rating) return true;
-
-    //         const upperBound = rating;
-    //         const lowerBound = rating === 1 ? 0 : rating - 0.9;
-
-    //         return item.rating <= upperBound && item.rating >= lowerBound;
-    //     })
-    //     // SORTING (MULTI CONDITION)
-    //     .sort((a, b) => {
-    //         // PRIORITAS 1: PRICE
-    //         if (sortPrice === "high") return b.price - a.price;
-    //         if (sortPrice === "low") return a.price - b.price;
-
-    //         // PRIORITAS 2: RATING MANUAL
-    //         if (sortRating === "high") return b.rating - a.rating;
-    //         if (sortRating === "low") return a.rating - b.rating;
-
-    //         return 0;
-    //     });
+        });
 
     return (
         <div style={{
@@ -285,154 +297,35 @@ export default function Wishlist() {
                 <Snackbar></Snackbar>
             </Box>
 
-            <Typography variant="h5" marginTop={5}>
-                <strong>Wishlist</strong>
-            </Typography>
+            <Typography variant="h5" marginTop={5}><strong>Wishlist</strong></Typography>
 
-            <Box
-                sx={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(4, 1fr)",
-                    gap: 4,
-                    marginTop: 5,
-                }}
-            >
-                {filteredProducts.map((product, index) => (
-                    <Card
-                        key={index}
-                        // elevation={2}
-                        sx={{
-                            cursor: "pointer",
-                            borderRadius: 4,
-                            boxShadow: "0px 0px 20px rgba(0, 0, 0, 0.27)",
-                            p: 2,
-                            backgroundColor: "#ffffff",
-                            transition: "0.3s",
-                            "&:hover": {
-                                transform: "translateY(-6px)",
-                                boxShadow: "0 8px 24px rgba(0,0,0,0.08)",
-                            },
-                        }}
-                        onClick={() => navigate(`/product/${product.id}`)}
-                    >
-                        <Box
-                            sx={{
-                                position: "relative",
-                                backgroundColor: "#f3f3f3",
-                                borderRadius: 3,
-                                height: 200,
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                overflow: "hidden", // penting!
-                                mb: 2,
-                            }}
-                        >
+            <Box sx={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 4, marginTop: 5 }}>
+                {filteredProducts.map((product) => (
+                    <Card key={product.id}
+                        sx={{ cursor: "pointer", borderRadius: 4, boxShadow: "0px 0px 20px rgba(0, 0, 0, 0.27)", p: 2, backgroundColor: "#ffffff", transition: "0.3s", "&:hover": { transform: "translateY(-6px)", boxShadow: "0 8px 24px rgba(0,0,0,0.08)" } }}
+                        onClick={() => navigate(`/product/${product.id}`)}>
+                        <Box sx={{ position: "relative", backgroundColor: "#f3f3f3", borderRadius: 3, height: 200, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", mb: 2 }}>
                             <IconButton
                                 onClick={(e) => handleToggleWishlist(e, product.id)}
-                                sx={{
-                                    position: "absolute",
-                                    top: 8, right: 8, zIndex: 10,
-                                    backgroundColor: "white",
-                                    width: 30, height: 30,
-                                    boxShadow: "0 2px 6px rgba(0, 0, 0, 0.35)",
-                                    color: wishlistedIds.includes(product.id) 
-                                        ? "rgba(255, 0, 0, 0.79)" 
-                                        : "#ccc",
-                                    "&:hover": { backgroundColor: "white", scale: 1.15 },
-                                }}
-                            >
+                                sx={{ position: "absolute", top: 8, right: 8, zIndex: 10, backgroundColor: "white", width: 30, height: 30, boxShadow: "0 2px 6px rgba(0, 0, 0, 0.35)", color: wishlistedIds.includes(product.id) ? "rgba(255, 0, 0, 0.79)" : "#ccc", "&:hover": { backgroundColor: "white", scale: 1.15 } }}>
                                 <FavoriteIcon sx={{ fontSize: 16 }} />
                             </IconButton>
-
-                            <Box
-                                component="img"
-                                src={banner1}
-                                sx={{
-                                    width: "100%",
-                                    height: "100%",
-                                    objectFit: "contain",
-                                    padding: "16px",
-                                    transition: "transform 0.35s ease",
-
-                                    ".MuiCard-root:hover &": {
-                                        transform: "scale(1.08)",
-                                    },
-                                }}
-                            />
+                            <Box component="img" src={product.picture}
+                                sx={{ width: "100%", height: "100%", objectFit: "contain", padding: "16px", transition: "transform 0.35s ease", ".MuiCard-root:hover &": { transform: "scale(1.08)" } }} />
                         </Box>
 
-                        <Box
-                            sx={{
-                                display: "flex",
-                                justifyContent: "space-between",
-                            }}
-                        >
-                            <Typography
-                                variant="subtitle1"
-                                sx={{ fontWeight: 600 }}
-                            >
-                                {product.name}
-                            </Typography>
-
-                            <Typography
-                                variant="subtitle1"
-                                sx={{ fontWeight: 700 }}
-                            >
-                                ${product.price}.00
-                            </Typography>
+                        <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                            <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>{product.name}</Typography>
+                            <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>${product.price}.00</Typography>
                         </Box>
 
-                        <Typography
-                            variant="body2"
-                            sx={{ color: "#757575", mt: 0.5 }}
-                        >
-                            High quality wireless audio
-                        </Typography>
-
-                        <Box
-                            sx={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: 1,
-                                mt: 1,
-                            }}
-                        >
-                            <Rating
-                                value={product.rating}
-                                precision={0.1}
-                                readOnly
-                                size="small"
-                                sx={{
-                                    color: "#16a34a",
-                                }}
-                            />
-                            <Typography
-                                variant="caption"
-                                sx={{ color: "#16a34a" }}
-                            >
-                                (121)
-                            </Typography>
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 1 }}>
+                            <Rating value={product.rating} precision={0.1} readOnly size="small" sx={{ color: "#16a34a" }} />
+                            <Typography variant="caption" sx={{ color: "#16a34a" }}>(121)</Typography>
                         </Box>
 
                         <Box sx={{ mt: 2 }}>
-                            <Button
-                                fullWidth
-                                sx={{
-                                    border: "1px solid #0f5132",
-                                    borderRadius: "999px",
-                                    textTransform: "none",
-                                    fontSize: 13,
-                                    fontWeight: 600,
-                                    py: 0.8,
-                                    color: "#0f5132",
-                                    overflow: "hidden", // penting untuk ripple biar clipped
-                                    "&:hover": {
-                                        backgroundColor: "#0f5132",
-                                        color: "white",
-                                    },
-                                }}
-                            >
+                            <Button fullWidth onClick={(e) => handleAddToCart(e, product)} sx={{ border: "1px solid #0f5132", borderRadius: "999px", textTransform: "none", fontSize: 13, fontWeight: 600, py: 0.8, color: "#0f5132", overflow: "hidden", "&:hover": { backgroundColor: "#0f5132", color: "white" } }}>
                                 Add to Cart
                             </Button>
                         </Box>

@@ -8,9 +8,8 @@ import StorefrontIcon from '@mui/icons-material/Storefront';
 import ChatIcon from '@mui/icons-material/Chat';
 import LocalShippingIcon from '@mui/icons-material/LocalShipping';
 import { useNavigate } from "react-router";
-import { useAppDispatch } from "../../hooks/useAppDispatch";
+
 import { useAppSelector } from "../../hooks/useAppSelector";
-import { fetchMyOrders } from "../../store/orderSlice";
 import type { OrderDetail } from "../../type";
 import formatPrice from "../../utils/FormatPrice";
 
@@ -31,19 +30,34 @@ const STATUS_LABEL: Record<string, string> = {
 }
 
 export default function OrderHistoryPage() {
-    const dispatch = useAppDispatch();
     const navigate = useNavigate();
+    const { userInfo } = useAppSelector((state) => state.auth);
+    const user_id = userInfo?.user_id;
 
-    const { orders, status } = useAppSelector(state => state.order);
-
+    const [orders, setOrders] = useState<OrderDetail[]>([]);
+    const [loading, setLoading] = useState(true);
     const [tabValue, setTabValue] = useState('all');
     const [search, setSearch] = useState('');
 
-    // Fetch ulang tiap kali tab berubah
+    // ================= FETCH ORDERS =================
     useEffect(() => {
-        const mappedStatus = TAB_TO_STATUS[tabValue] ?? 'all';
-        dispatch(fetchMyOrders(mappedStatus));
-    }, [tabValue, dispatch]);
+        if (!user_id) return;
+        const getOrders = async () => {
+            setLoading(true);
+            try {
+                const mappedStatus = TAB_TO_STATUS[tabValue] ?? 'all';
+                const params = mappedStatus !== 'all' ? `?customer_id=${user_id}&status=${mappedStatus}` : `?customer_id=${user_id}`;
+                const res = await fetch(`/api/order${params}`);
+                const data = await res.json();
+                setOrders(data.data);
+            } catch (error) {
+                console.error(error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        getOrders();
+    }, [tabValue, user_id]);
 
     const handleTabChange = (_: React.SyntheticEvent, newValue: string) => {
         setTabValue(newValue);
@@ -113,19 +127,19 @@ export default function OrderHistoryPage() {
                 scrollbarWidth: "none",
                 "&::-webkit-scrollbar": { display: "none" },
             }}>
-                {status === 'loading' && (
+                {loading && (
                     <Box display="flex" justifyContent="center" p={5}>
                         <CircularProgress sx={{ color: "#89a471" }} />
                     </Box>
                 )}
 
-                {status !== 'loading' && filteredOrders.length === 0 && (
+                {!loading && filteredOrders.length === 0 && (
                     <Box display="flex" justifyContent="center" p={5}>
                         <Typography color="text.secondary">Tidak ada order ditemukan.</Typography>
                     </Box>
                 )}
 
-                {status !== 'loading' && filteredOrders.map((order: OrderDetail) => (
+                {!loading && filteredOrders.map((order: OrderDetail) => (
                     <Card
                         key={order.order_id}
                         onClick={() => navigate(`/orders/detail/${order.order_id}`)}

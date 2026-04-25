@@ -1,49 +1,92 @@
-import React, { useState } from "react";
-import { Box, Container, Typography, TextField, Button, Radio, RadioGroup, FormControlLabel, Checkbox, Divider, InputLabel, InputAdornment, Breadcrumbs, Link, } from "@mui/material";
+import React, { useEffect, useState } from "react";
+import { Box, Container, Typography, TextField, Button, Radio, RadioGroup, FormControlLabel, Checkbox, Divider, InputLabel, InputAdornment, Breadcrumbs, Link, FormControl, Select, MenuItem, } from "@mui/material";
 
 import { useNavigate } from "react-router";
 import HomeIcon from "@mui/icons-material/Home";
 import CreditCardIcon from "@mui/icons-material/CreditCard";
 
-// redux
-import { useAppDispatch } from "../../hooks/useAppDispatch";
 import { useAppSelector } from "../../hooks/useAppSelector";
-import { checkoutOrder } from "../../store/orderSlice";
+import type { Address, CartItem } from "../../type";
+
+import formatPrice from "../../utils/FormatPrice"
 
 export default function CheckoutPage() {
-    const [isReturningCustomer, setIsReturningCustomer] = React.useState(false);
-    const dispatch = useAppDispatch();
     const navigate = useNavigate();
+    const { userInfo } = useAppSelector((state) => state.auth);
+    const user_id = userInfo?.user_id;
 
-    // Ambil cart items yang is_selected === true
-    const { items, total_payment } = useAppSelector(state => state.cart);
-    const selectedItems = items.filter(item => item.is_selected);
+    const [isReturningCustomer, setIsReturningCustomer] = React.useState(false);
+    const [selectedItems, setSelectedItems] = useState<CartItem[]>([]);
+    const [addresses, setAddresses] = useState<Address[]>([]);
+    const [selectedAddressId, setSelectedAddressId] = useState<string>("");
+    const [loading, setLoading] = useState(true);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // Ambil addresses dari user
-    const userInfo = useAppSelector(state => state.auth.userInfo);
-    const addresses = userInfo?.addresses ?? [];
-    const defaultAddress = addresses.find(a => a.is_default) ?? addresses[0];
+    // ================= FETCH CART =================
+    useEffect(() => {
+        if (!user_id) return;
+        const getCart = async () => {
+            try {
+                const res = await fetch(`/api/cart?user_id=${user_id}`);
+                const data = await res.json();
+                setSelectedItems(data.data.filter((item: CartItem) => item.is_selected));
+            } catch (error) {
+                console.error(error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        getCart();
+    }, [user_id]);
 
-    const [selectedAddressId, setSelectedAddressId] = useState<string>(
-        defaultAddress?.address_id?.toString() ?? ""
+    // ================= FETCH ADDRESSES =================
+    useEffect(() => {
+        if (!user_id) return;
+        const getAddresses = async () => {
+            try {
+                const res = await fetch(`/api/address/${user_id}`);
+                const data = await res.json();
+                setAddresses(data);
+                const def = data.find((a: Address) => a.is_default) ?? data[0];
+                if (def) setSelectedAddressId(def.address_id);
+            } catch (error) {
+                console.error(error);
+            }
+        };
+        getAddresses();
+    }, [user_id]);
+
+    // ================= TOTAL =================
+    const total = selectedItems.reduce(
+        (sum, item) => sum + Number(item.variant.price) * item.quantity, 0
     );
-    const [voucherCode, setVoucherCode] = useState("");
 
+    // ================= CHECKOUT =================
     const handleCheckout = async () => {
-        if (!selectedAddressId) {
-            alert("Pilih alamat pengiriman dulu!");
-            return;
-        }
-        const result = await dispatch(checkoutOrder({
-            address_id: selectedAddressId,
-            // voucher_id: voucherCode || undefined,
-        }));
+        if (!selectedAddressId) return alert("Pilih alamat pengiriman dulu!");
+        if (!user_id) return;
+        if (selectedItems.length === 0) return alert("Tidak ada item yang dipilih!");
 
-        if (checkoutOrder.fulfilled.match(result)) {
+        setIsSubmitting(true);
+        try {
+            const res = await fetch(`/api/order/checkout`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    customer_id: user_id,
+                    address_id: selectedAddressId,
+                }),
+            });
+
+            const data = await res.json();
+            if (!res.ok) return alert("Checkout gagal: " + data.message);
+
             alert("Checkout berhasil!");
             navigate("/orders");
-        } else {
-            alert("Checkout gagal: " + (result.payload as any)?.message);
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -58,10 +101,6 @@ export default function CheckoutPage() {
             borderRadius: "6px",
         },
     };
-
-    function formatPrice(total_payment: number): React.ReactNode {
-        throw new Error("Function not implemented.");
-    }
 
     return (
         <Container maxWidth="lg" sx={{ py: 4 }}>
@@ -177,6 +216,43 @@ export default function CheckoutPage() {
                             <Typography fontWeight={800} fontSize={22}>
                                 Delivery Information
                             </Typography>
+
+                            {/* PILIH ALAMAT */}
+                            {addresses.length > 0 ? (
+                                <FormControl fullWidth size="small" sx={{ mb: 2 }}>
+                                    <Typography fontSize={12} mb={0.5} fontWeight="bold">
+                                        Pilih Alamat Pengiriman*
+                                    </Typography>
+                                    <Select
+                                        value={selectedAddressId}
+                                        onChange={(e) => setSelectedAddressId(e.target.value)}
+                                    >
+                                        {addresses.map((addr) => (
+                                            <MenuItem key={addr.address_id} value={addr.address_id}>
+                                                {addr.full_name} — {addr.address}, {addr.city}
+                                                {addr.is_default ? " (Default)" : ""}
+                                            </MenuItem>
+                                        ))}
+                                    </Select>
+                                </FormControl>
+                            ) : (
+                                <Typography fontSize={13} color="error">
+                                    Belum ada alamat tersimpan. Tambahkan alamat di profil kamu dulu.
+                                </Typography>
+                            )}
+
+                            {/* Detail alamat yang dipilih */}
+                            {selectedAddressId && (() => {
+                                const addr = addresses.find(a => a.address_id === selectedAddressId);
+                                if (!addr) return null;
+                                return (
+                                    <Box mt={2}>
+                                        <Typography fontWeight={600}>{addr.full_name}</Typography>
+                                        <Typography fontSize={13} color="#666">{addr.address}</Typography>
+                                        <Typography fontSize={13} color="#666">{addr.city}, {addr.province}</Typography>
+                                    </Box>
+                                );
+                            })()}
 
                             <Button
                                 size="small"
@@ -382,8 +458,24 @@ export default function CheckoutPage() {
 
                         <Divider sx={{ my: 3 }} />
 
+                         {/* ITEM LIST */}
+                        <Box display="flex" flexDirection="column" gap={1} mb={2}>
+                            {selectedItems.map(item => (
+                                <Box key={item.variant_id} display="flex" justifyContent="space-between">
+                                    <Typography fontSize={13} color="#555" flex={1}>
+                                        {item.variant.name} x{item.quantity}
+                                    </Typography>
+                                    <Typography fontSize={13}>
+                                        {formatPrice(Number(item.variant.price) * item.quantity)}
+                                    </Typography>
+                                </Box>
+                            ))}
+                        </Box>
+
+                        <Divider sx={{ my: 2 }} />
+
                         {/* COUPON */}
-                        <Box
+                        {/* <Box
                             display="flex"
                             bgcolor={light}
                             borderRadius="30px"
@@ -416,7 +508,7 @@ export default function CheckoutPage() {
                             </Button>
                         </Box>
 
-                        <Divider sx={{ my: 3 }} />
+                        <Divider sx={{ my: 3 }} /> */}
 
                         <Typography fontWeight={600} mb={1}>
                             Payment Details
@@ -611,13 +703,15 @@ export default function CheckoutPage() {
                                     Total
                                 </Typography>
                                 <Typography fontWeight={700} fontSize={15}>
-                                    = $494.10
+                                    {formatPrice(total)}
                                 </Typography>
                             </Box>
 
                             {/* BUTTON */}
                             <Button
                                 fullWidth
+                                disabled={isSubmitting}
+                                onClick={handleCheckout}
                                 sx={{
                                     background: "#0B5D3B",
                                     color: "#fff",
@@ -631,7 +725,7 @@ export default function CheckoutPage() {
                                     },
                                 }}
                             >
-                                Pay {formatPrice(total_payment)}
+                                {isSubmitting ? "Memproses..." : `Pay ${formatPrice(total)}`}
                             </Button>
                         </Box>
                     </Box>

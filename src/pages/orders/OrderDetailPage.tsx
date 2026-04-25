@@ -16,13 +16,11 @@ import {
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import RadioButtonUncheckedIcon from "@mui/icons-material/RadioButtonUnchecked";
 
-// redux
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router";
-import { useAppDispatch } from "../../hooks/useAppDispatch";
 import { useAppSelector } from "../../hooks/useAppSelector";
-import { fetchOrderDetail, cancelOrder } from "../../store/orderSlice";
 import formatPrice from "../../utils/FormatPrice";
+import type { OrderDetail } from "../../type";
 
 const TimelineItem = ({ time, title, desc, active }: any) => {
   return (
@@ -50,29 +48,53 @@ const TimelineItem = ({ time, title, desc, active }: any) => {
 
 export default function OrderDetailPage() {
     const { order_id } = useParams();
-    const dispatch = useAppDispatch();
     const navigate = useNavigate();
+    const { userInfo } = useAppSelector((state) => state.auth);
+    const user_id = userInfo?.user_id;
 
-    const { currentOrder, status } = useAppSelector(state => state.order);
+    const [currentOrder, setCurrentOrder] = useState<OrderDetail | null>(null);
+    const [loading, setLoading] = useState(true);
 
+    // ================= FETCH ORDER DETAIL =================
     useEffect(() => {
-        if (order_id) {
-            dispatch(fetchOrderDetail(order_id));
-        }
-    }, [order_id, dispatch]);
+        if (!order_id || !user_id) return;
+        const getOrderDetail = async () => {
+            try {
+                const res = await fetch(`/api/order/${order_id}?customer_id=${user_id}`);
+                const data = await res.json();
+                setCurrentOrder(data.data);
+            } catch (error) {
+                console.error(error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        getOrderDetail();
+    }, [order_id, user_id]);
 
+    // ================= CANCEL ORDER =================
     const handleCancel = async () => {
-        if (!order_id) return;
+        if (!order_id || !user_id) return;
         if (!window.confirm("Yakin mau cancel order ini?")) return;
 
-        const result = await dispatch(cancelOrder(order_id));
-        if (cancelOrder.fulfilled.match(result)) {
+        try {
+            const res = await fetch(`/api/order/cancel/${order_id}?customer_id=${user_id}`, {
+                method: "PATCH",
+            });
+
+            if (!res.ok) {
+                const data = await res.json();
+                return alert("Gagal cancel: " + data.message);
+            }
+
             alert("Order berhasil dicancel");
             navigate("/orders");
+        } catch (error) {
+            console.error(error);
         }
     };
 
-    if (status === 'loading' || !currentOrder) {
+    if (loading || !currentOrder) {
         return (
             <Box display="flex" justifyContent="center" p={5}>
                 <CircularProgress />
