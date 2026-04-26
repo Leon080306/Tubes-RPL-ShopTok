@@ -210,6 +210,7 @@ export default function ProductsPage() {
             setSnackMessage(`${product.name} berhasil ditambahkan ke keranjang!`);
             setSnackSeverity("success");
             setSnackOpen(true);
+            window.dispatchEvent(new Event("cart-updated"));
         } catch (error) {
             console.error(error);
             setSnackMessage("Gagal memasukkan ke keranjang");
@@ -615,7 +616,7 @@ export default function ProductsPage() {
 
                                 <Box
                                     component="img"
-                                    src={product.image || "/placeholder.png"}
+                                    src={product.image ? `/api/${product.image}` : "/placeholder.png"}
                                     alt={product.name}
                                     sx={{
                                         width: "100%",

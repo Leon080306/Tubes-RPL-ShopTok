@@ -137,7 +137,7 @@ export default function OrderHistoryPage() {
         const matchShop = order.shop?.name?.toLowerCase().includes(q);
         const matchId = order.order_id.toLowerCase().includes(q);
         const matchProduct = order.orderItems.some((item) =>
-            item.variant.product.name.toLowerCase().includes(q)
+            item.variant?.product?.name?.toLowerCase().includes(q)
         );
         return matchShop || matchId || matchProduct;
     });
@@ -243,6 +243,9 @@ function OrderCard({
 }: OrderCardProps) {
     const shippingMsg = SHIPPING_MESSAGE[order.status] ?? "Order is being processed.";
 
+    // Filter out items with null variants
+    const validItems = order.orderItems.filter((item) => item.variant !== null && item.variant !== undefined);
+
     return (
         <Card
             onClick={() => onNavigateDetail(order.order_id)}
@@ -334,49 +337,56 @@ function OrderCard({
 
                 {/* ITEMS */}
                 <Box sx={{ display: "flex", flexDirection: "column" }}>
-                    {order.orderItems.map((item, index) => (
-                        <Box
-                            key={item.variant_id}
-                            sx={{
-                                display: "flex",
-                                flexDirection: "row",
-                                justifyContent: "space-between",
-                                alignItems: "center",
-                                padding: "18px 12px",
-                                borderBottom:
-                                    index === order.orderItems.length - 1
-                                        ? "none"
-                                        : "1px solid rgba(0, 0, 0, 0.2)",
-                            }}
-                        >
-                            <Box sx={{ display: "flex", gap: "18px" }}>
-                                <img
-                                    src={item.variant.picture || "/src/assets/logos/AppLogo-iconOnly.png"}
-                                    style={{
-                                        width: "60px",
-                                        height: "60px",
-                                        borderRadius: "6px",
-                                        objectFit: "cover",
-                                    }}
-                                    alt={item.variant.product.name}
-                                />
-                                <Box sx={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                                    <Typography sx={{ fontSize: "14px" }}>
-                                        {item.variant.product.name}
-                                    </Typography>
-                                    <Typography sx={{ fontSize: "13px", color: "text.secondary" }}>
-                                        {item.variant.name}
-                                    </Typography>
-                                    <Typography sx={{ fontSize: "14px" }}>
-                                        {item.quantity}x
-                                    </Typography>
+                    {validItems.map((item, index) => {
+                        const variantPicture = item.variant?.picture ?? "/src/assets/logos/AppLogo-iconOnly.png";
+                        const variantName = item.variant?.name ?? "Unknown variant";
+                        const productName = item.variant?.product?.name ?? "Unknown product";
+                        const variantPrice = Number(item.variant?.price ?? 0);
+
+                        return (
+                            <Box
+                                key={item.variant_id}
+                                sx={{
+                                    display: "flex",
+                                    flexDirection: "row",
+                                    justifyContent: "space-between",
+                                    alignItems: "center",
+                                    padding: "18px 12px",
+                                    borderBottom:
+                                        index === validItems.length - 1
+                                            ? "none"
+                                            : "1px solid rgba(0, 0, 0, 0.2)",
+                                }}
+                            >
+                                <Box sx={{ display: "flex", gap: "18px" }}>
+                                    <img
+                                        src={`/api/${variantPicture}`}
+                                        style={{
+                                            width: "60px",
+                                            height: "60px",
+                                            borderRadius: "6px",
+                                            objectFit: "cover",
+                                        }}
+                                        alt={productName}
+                                    />
+                                    <Box sx={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                                        <Typography sx={{ fontSize: "14px" }}>
+                                            {productName}
+                                        </Typography>
+                                        <Typography sx={{ fontSize: "13px", color: "text.secondary" }}>
+                                            {variantName}
+                                        </Typography>
+                                        <Typography sx={{ fontSize: "14px" }}>
+                                            {item.quantity}x
+                                        </Typography>
+                                    </Box>
                                 </Box>
+                                <Typography>
+                                    {formatPrice(variantPrice * item.quantity)}
+                                </Typography>
                             </Box>
-                            <Typography>
-                                {formatPrice(Number(item.variant.price) * item.quantity)}
-                            </Typography>
-                        </Box>
-                    ))}
+                        );
+                    })}
                 </Box>
             </CardContent>
 

@@ -1,11 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable react-hooks/set-state-in-effect */
-import { useState, useEffect } from "react";
-import type { ReactNode } from "react";
+import { useState, useEffect, useCallback } from "react";
+import type { ReactNode, ChangeEvent } from "react";
 import {
   Box, Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText,
   Typography, Avatar, Card, CardContent, Chip, Table, TableBody, TableCell,
-  TableHead, TableRow, LinearProgress, Divider, Stack, Grid, CircularProgress, Alert
+  TableHead, TableRow, LinearProgress, Divider, Stack, Grid, CircularProgress, Alert,
+  TextField, Button, Dialog, DialogTitle, DialogContent, DialogActions,
 } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import type { SxProps, Theme } from "@mui/material";
@@ -13,11 +13,14 @@ import DashboardRoundedIcon from "@mui/icons-material/DashboardRounded";
 import ShoppingBagRoundedIcon from "@mui/icons-material/ShoppingBagRounded";
 import InventoryRoundedIcon from "@mui/icons-material/InventoryRounded";
 import ChatBubbleRoundedIcon from "@mui/icons-material/ChatBubbleRounded";
-import KeyboardArrowDownRoundedIcon from "@mui/icons-material/KeyboardArrowDownRounded";
 import ArrowUpwardRoundedIcon from "@mui/icons-material/ArrowUpwardRounded";
 import ArrowDownwardRoundedIcon from "@mui/icons-material/ArrowDownwardRounded";
 import AttachMoneyRoundedIcon from "@mui/icons-material/AttachMoneyRounded";
 import PeopleRoundedIcon from "@mui/icons-material/PeopleRounded";
+import LogoutRoundedIcon from "@mui/icons-material/LogoutRounded";
+import EditRoundedIcon from "@mui/icons-material/EditRounded";
+import StorefrontRoundedIcon from "@mui/icons-material/StorefrontRounded";
+import ImageRoundedIcon from "@mui/icons-material/ImageRounded";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, BarChart, Bar, Legend, Cell,
@@ -26,7 +29,10 @@ import ProductsList from "./ProductsList";
 import OrdersList from "./OrdersList";
 import { useNavigate } from "react-router-dom";
 import { useAppSelector } from "../../hooks/useAppSelector";
+import { useAppDispatch } from "../../hooks/useAppDispatch";
 import React from "react";
+import { authActions } from "../../store/authSlice";
+import ChatCustomerEmbed from "./ChatCustomerEmbed";
 
 // ─── Brand colors ─────────────────────────────────────────────────────────────
 const PRIMARY = "#003f29" as const;
@@ -63,8 +69,8 @@ const theme = createTheme({
 });
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-type NavId = "dashboard" | "orders" | "products" | "messages";
-type OrderStatus = "pending" | "paid" | "shipped" | "cancelled";
+type NavId = "dashboard" | "orders" | "products" | "messages" | "shop-settings";
+type OrderStatus = "pending" | "completed" | "cancelled";
 type ChartTab = "7D" | "30D" | "3M";
 
 interface NavItem { id: NavId; label: string; icon: ReactNode; badge?: number; }
@@ -73,7 +79,9 @@ interface NavSection { label: string; items: NavItem[]; }
 interface ShopInfo {
   shop_id: string;
   name: string;
+  description: string | null;
   profile_pic: string | null;
+  banner: string | null;
   owner_id: string;
 }
 
@@ -118,17 +126,17 @@ const NAV_SECTIONS: NavSection[] = [
     label: "Store",
     items: [
       { id: "messages", label: "Messages", icon: <ChatBubbleRoundedIcon fontSize="small" /> },
+      { id: "shop-settings", label: "Shop Settings", icon: <StorefrontRoundedIcon fontSize="small" /> },
     ],
   },
 ];
 
 const STATUS_COLORS: Record<string, string> = {
-  paid: "#003f29", shipped: "#1d4ed8", pending: "#854d0e", cancelled: "#b91c1c",
+  completed: "#003f29", pending: "#854d0e", cancelled: "#b91c1c",
 };
 
 const STATUS_CHIP_SX: Record<string, SxProps<Theme>> = {
-  paid: { bgcolor: "#dcfce7", color: "#15803d" },
-  shipped: { bgcolor: "#dbeafe", color: "#1d4ed8" },
+  completed: { bgcolor: "#dcfce7", color: "#15803d" },
   pending: { bgcolor: "#fef9c3", color: "#854d0e" },
   cancelled: { bgcolor: "#fee2e2", color: "#b91c1c" },
 };
@@ -144,13 +152,366 @@ const fmtPrice = (n: number) => {
 const initials = (name: string) =>
   name.split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2);
 
+// ─── Logout Dialog ────────────────────────────────────────────────────────────
+interface LogoutDialogProps {
+  open: boolean;
+  loading: boolean;
+  onConfirm: () => void;
+  onClose: () => void;
+}
+function LogoutDialog({ open, loading, onConfirm, onClose }: LogoutDialogProps) {
+  return (
+    <Dialog
+      open={open}
+      onClose={loading ? undefined : onClose}
+      PaperProps={{ sx: { borderRadius: 3, maxWidth: 380, width: "100%" } }}
+    >
+      <DialogTitle sx={{ pb: 1, pt: 3, px: 3 }}>
+        <Stack direction="row" alignItems="center" gap={1.5}>
+          <Box
+            sx={{
+              width: 44, height: 44, borderRadius: "12px",
+              bgcolor: "#fee2e2", color: "#dc2626",
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}
+          >
+            <LogoutRoundedIcon sx={{ fontSize: 22 }} />
+          </Box>
+          <Box>
+            <Typography sx={{ fontSize: 16, fontWeight: 700, color: "#0d1f13" }}>
+              Logout
+            </Typography>
+            <Typography sx={{ fontSize: 12, color: "#94a3b8", mt: 0.2 }}>
+              You'll need to login again
+            </Typography>
+          </Box>
+        </Stack>
+      </DialogTitle>
+      <DialogContent sx={{ px: 3, pt: 2, pb: 1 }}>
+        <Typography sx={{ fontSize: 13, color: "#475569", lineHeight: 1.6 }}>
+          Are you sure you want to logout from the seller dashboard?
+        </Typography>
+      </DialogContent>
+      <DialogActions sx={{ px: 3, pb: 2.5, pt: 1.5, gap: 1 }}>
+        <Button
+          onClick={onClose}
+          disabled={loading}
+          sx={{
+            flex: 1, textTransform: "none", fontWeight: 600, borderRadius: 2,
+            color: "#475569", fontSize: 13, border: "1px solid #e2e8f0",
+            "&:hover": { bgcolor: "#f8fafc", borderColor: "#cbd5e1" },
+          }}
+        >
+          Cancel
+        </Button>
+        <Button
+          onClick={onConfirm}
+          disabled={loading}
+          variant="contained"
+          sx={{
+            flex: 1, textTransform: "none", fontWeight: 600, borderRadius: 2, fontSize: 13,
+            bgcolor: "#dc2626", "&:hover": { bgcolor: "#b91c1c" },
+            "&.Mui-disabled": { bgcolor: "#fca5a5", color: "#fff" },
+          }}
+        >
+          {loading ? (
+            <Stack direction="row" alignItems="center" gap={1}>
+              <CircularProgress size={16} sx={{ color: "#fff" }} />
+              Logging out…
+            </Stack>
+          ) : (
+            "Logout"
+          )}
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
+
+// ─── Shop Settings Page ───────────────────────────────────────────────────────
+interface ShopSettingsProps {
+  shop: ShopInfo;
+  onShopUpdated: (updated: ShopInfo) => void;
+}
+function ShopSettings({ shop, onShopUpdated }: ShopSettingsProps) {
+  const [name, setName] = useState(shop.name);
+  const [description, setDescription] = useState(shop.description ?? "");
+  const [profilePic, setProfilePic] = useState<File | null>(null);
+  const [banner, setBanner] = useState<File | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+
+  const profilePreview = profilePic
+    ? URL.createObjectURL(profilePic)
+    : shop.profile_pic;
+
+  const bannerPreview = banner
+    ? URL.createObjectURL(banner)
+    : shop.banner;
+
+  const handleSave = async () => {
+    if (!name.trim()) {
+      setError("Shop name is required");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+      setSuccess(null);
+
+      const formData = new FormData();
+      formData.append("name", name.trim());
+      formData.append("description", description.trim());
+      formData.append("owner_id", shop.owner_id);
+      if (profilePic) formData.append("profile_pic", profilePic);
+      if (banner) formData.append("banner", banner);
+
+      const res = await fetch(`/api/shops/${shop.shop_id}`, {
+        method: "PUT",
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.message || "Failed to update shop");
+      }
+
+      const data = await res.json();
+      const updated = data.data;
+
+      onShopUpdated({
+        shop_id: updated.shop_id,
+        name: updated.name,
+        description: updated.description,
+        profile_pic: updated.profile_pic,
+        banner: updated.banner,
+        owner_id: updated.owner_id,
+      });
+
+      setProfilePic(null);
+      setBanner(null);
+      setSuccess("Shop updated successfully!");
+      setTimeout(() => setSuccess(null), 4000);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to update shop";
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Box>
+      {/* Header */}
+      <Box mb={2.5}>
+        <Typography sx={{ fontSize: 20, fontWeight: 700, color: "#0d1f13" }}>
+          Shop Settings
+        </Typography>
+        <Typography sx={{ fontSize: 13, color: "#64748b", mt: 0.3 }}>
+          Update your store profile and branding
+        </Typography>
+      </Box>
+
+      {error && (
+        <Alert severity="error" onClose={() => setError(null)} sx={{ mb: 2, borderRadius: 2 }}>
+          {error}
+        </Alert>
+      )}
+      {success && (
+        <Alert severity="success" onClose={() => setSuccess(null)} sx={{ mb: 2, borderRadius: 2 }}>
+          {success}
+        </Alert>
+      )}
+
+      {/* Banner */}
+      <Card sx={{ mb: 2.5, borderRadius: 3, border: "1px solid #e2e8f0", boxShadow: "none", overflow: "hidden" }}>
+        <Box
+          component="label"
+          sx={{
+            display: "block", cursor: "pointer", position: "relative",
+            height: 180, bgcolor: "#f1f5f9",
+            backgroundImage: bannerPreview ? `url(${bannerPreview})` : "none",
+            backgroundSize: "cover", backgroundPosition: "center",
+            transition: "all 0.2s",
+            "&:hover": { opacity: 0.85 },
+          }}
+        >
+          {!bannerPreview && (
+            <Stack alignItems="center" justifyContent="center" sx={{ height: "100%" }}>
+              <ImageRoundedIcon sx={{ fontSize: 40, color: "#cbd5e1" }} />
+              <Typography sx={{ fontSize: 12, color: "#94a3b8", mt: 0.5 }}>
+                Click to upload banner (recommended 1200×300)
+              </Typography>
+            </Stack>
+          )}
+          {bannerPreview && (
+            <Box
+              sx={{
+                position: "absolute", inset: 0,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                bgcolor: "rgba(0,0,0,0.3)", opacity: 0,
+                transition: "opacity 0.2s",
+                "&:hover": { opacity: 1 },
+              }}
+            >
+              <Typography sx={{ color: "#fff", fontSize: 13, fontWeight: 600 }}>
+                Change Banner
+              </Typography>
+            </Box>
+          )}
+          <input
+            hidden
+            type="file"
+            accept="image/*"
+            onChange={(e: ChangeEvent<HTMLInputElement>) => setBanner(e.target.files?.[0] ?? null)}
+          />
+        </Box>
+
+        {/* Profile pic + shop info */}
+        <CardContent sx={{ p: 3, position: "relative" }}>
+          <Stack direction="row" gap={2.5} alignItems="flex-start">
+            {/* Profile pic */}
+            <Box
+              component="label"
+              sx={{
+                cursor: "pointer", flexShrink: 0, position: "relative",
+                mt: -6, // overlap banner
+              }}
+            >
+              <Avatar
+                src={profilePreview ? `/api/${profilePreview}` : "/placeholder.png"}
+                sx={{
+                  width: 88, height: 88,
+                  bgcolor: ACCENT, color: PRIMARY,
+                  fontSize: 28, fontWeight: 700,
+                  border: "4px solid #fff",
+                  boxShadow: "0 2px 12px rgba(0,0,0,0.1)",
+                }}
+              >
+                {initials(name || "S")}
+              </Avatar>
+              <Box
+                sx={{
+                  position: "absolute", bottom: 0, right: 0,
+                  width: 28, height: 28, borderRadius: "50%",
+                  bgcolor: PRIMARY, color: "#fff",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  border: "2px solid #fff",
+                }}
+              >
+                <EditRoundedIcon sx={{ fontSize: 14 }} />
+              </Box>
+              <input
+                hidden
+                type="file"
+                accept="image/*"
+                onChange={(e: ChangeEvent<HTMLInputElement>) => setProfilePic(e.target.files?.[0] ?? null)}
+              />
+            </Box>
+
+            <Box sx={{ flex: 1, pt: 0.5 }}>
+              <Typography sx={{ fontSize: 11, color: "#94a3b8", mb: 0.3 }}>
+                Shop ID: {shop.shop_id.slice(0, 8)}…
+              </Typography>
+              <Typography sx={{ fontSize: 16, fontWeight: 700, color: "#0d1f13" }}>
+                {name || "Your Shop"}
+              </Typography>
+            </Box>
+          </Stack>
+        </CardContent>
+      </Card>
+
+      {/* Form */}
+      <Card sx={{ borderRadius: 3, border: "1px solid #e2e8f0", boxShadow: "none" }}>
+        <CardContent sx={{ p: 3 }}>
+          <Typography
+            sx={{
+              fontWeight: 600, fontSize: 14, color: "#64748b", mb: 2,
+              textTransform: "uppercase", letterSpacing: 0.8,
+            }}
+          >
+            Shop Information
+          </Typography>
+
+          <Stack gap={2}>
+            <TextField
+              label="Shop Name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              fullWidth
+              sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
+            />
+            <TextField
+              label="Description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              fullWidth
+              multiline
+              rows={4}
+              placeholder="Tell customers about your shop…"
+              sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
+            />
+          </Stack>
+
+          {/* Image change indicators */}
+          <Stack direction="row" gap={1} mt={2} flexWrap="wrap">
+            {profilePic && (
+              <Chip
+                label={`New profile: ${profilePic.name}`}
+                size="small"
+                onDelete={() => setProfilePic(null)}
+                sx={{ fontSize: 11, bgcolor: "#f0fdf4", color: PRIMARY }}
+              />
+            )}
+            {banner && (
+              <Chip
+                label={`New banner: ${banner.name}`}
+                size="small"
+                onDelete={() => setBanner(null)}
+                sx={{ fontSize: 11, bgcolor: "#f0fdf4", color: PRIMARY }}
+              />
+            )}
+          </Stack>
+        </CardContent>
+      </Card>
+
+      {/* Save Button */}
+      <Button
+        variant="contained"
+        fullWidth
+        onClick={handleSave}
+        disabled={loading}
+        sx={{
+          mt: 3, py: 1.5, borderRadius: 99,
+          bgcolor: PRIMARY, fontWeight: 700, fontSize: 15,
+          textTransform: "none",
+          "&:hover": { bgcolor: "#00502f" },
+          "&.Mui-disabled": { bgcolor: "#e2e8f0", color: "#94a3b8" },
+        }}
+      >
+        {loading ? (
+          <Stack direction="row" alignItems="center" gap={1}>
+            <CircularProgress size={18} sx={{ color: "#fff" }} />
+            Saving…
+          </Stack>
+        ) : (
+          "Save Changes"
+        )}
+      </Button>
+    </Box>
+  );
+}
+
 // ─── Sidebar ──────────────────────────────────────────────────────────────────
 interface SidebarProps {
   active: NavId;
   onSelect: (id: NavId) => void;
   shop: ShopInfo | null;
+  onLogout: () => void;
 }
-function Sidebar({ active, onSelect, shop }: SidebarProps) {
+function Sidebar({ active, onSelect, shop, onLogout }: SidebarProps) {
   return (
     <Drawer
       variant="permanent"
@@ -187,11 +548,17 @@ function Sidebar({ active, onSelect, shop }: SidebarProps) {
             <List dense disablePadding>
               {section.items.map((item) => (
                 <ListItem key={item.id} disablePadding>
-                  <ListItemButton selected={active === item.id} onClick={() => onSelect(item.id)}>
+                  <ListItemButton
+                    selected={active === item.id}
+                    onClick={() => onSelect(item.id)}
+                  >
                     <ListItemIcon>{item.icon}</ListItemIcon>
                     <ListItemText
                       primary={item.label}
-                      primaryTypographyProps={{ fontSize: 13.5, fontWeight: active === item.id ? 600 : 400 }}
+                      primaryTypographyProps={{
+                        fontSize: 13.5,
+                        fontWeight: active === item.id ? 600 : 400,
+                      }}
                     />
                     {item.badge !== undefined && (
                       <Chip label={item.badge} size="small" sx={{
@@ -207,24 +574,78 @@ function Sidebar({ active, onSelect, shop }: SidebarProps) {
         ))}
       </Box>
 
+      {/* Bottom: Shop profile + Logout */}
       <Box sx={{ px: 1.5, pb: 2, borderTop: "1px solid rgba(255,255,255,0.08)", pt: 1.5 }}>
-        <Stack direction="row" alignItems="center" gap={1.25} sx={{
-          px: 1, py: 0.75, borderRadius: 2, cursor: "pointer",
-          "&:hover": { bgcolor: "rgba(255,255,255,0.06)" },
-        }}>
+        {/* Shop profile — click to edit */}
+        <Stack
+          direction="row"
+          alignItems="center"
+          gap={1.25}
+          onClick={() => onSelect("shop-settings")}
+          sx={{
+            px: 1, py: 0.75, borderRadius: 2, cursor: "pointer",
+            bgcolor: active === "shop-settings" ? "rgba(74,222,128,0.15)" : "transparent",
+            "&:hover": { bgcolor: "rgba(255,255,255,0.06)" },
+            transition: "all 0.15s",
+          }}
+        >
           <Avatar
-            src={shop?.profile_pic ?? undefined}
-            sx={{ width: 34, height: 34, bgcolor: ACCENT, color: PRIMARY, fontSize: 13, fontWeight: 700 }}
+            src={shop?.profile_pic ? `/api/${shop?.profile_pic}` : "/placeholder.png"}
+            sx={{
+              width: 34, height: 34, bgcolor: ACCENT, color: PRIMARY,
+              fontSize: 13, fontWeight: 700,
+            }}
           >
             {shop ? initials(shop.name) : "?"}
           </Avatar>
           <Box sx={{ flex: 1, minWidth: 0 }}>
-            <Typography sx={{ color: "#fff", fontSize: 13, fontWeight: 600 }}>
+            <Typography
+              sx={{
+                color: active === "shop-settings" ? ACCENT : "#fff",
+                fontSize: 13, fontWeight: 600,
+                overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+              }}
+            >
               {shop?.name ?? "—"}
             </Typography>
-            <Typography sx={{ color: "rgba(255,255,255,0.4)", fontSize: 11 }}>Store Owner</Typography>
+            <Typography sx={{ color: "rgba(255,255,255,0.4)", fontSize: 11 }}>
+              Store Owner
+            </Typography>
           </Box>
-          <KeyboardArrowDownRoundedIcon sx={{ color: "rgba(255,255,255,0.35)", fontSize: 16 }} />
+          <EditRoundedIcon
+            sx={{
+              color: active === "shop-settings"
+                ? ACCENT
+                : "rgba(255,255,255,0.35)",
+              fontSize: 14,
+            }}
+          />
+        </Stack>
+
+        {/* Logout button */}
+        <Stack
+          direction="row"
+          alignItems="center"
+          gap={1.25}
+          onClick={onLogout}
+          sx={{
+            px: 1, py: 0.75, mt: 0.5, borderRadius: 2, cursor: "pointer",
+            "&:hover": { bgcolor: "rgba(239,68,68,0.12)" },
+            transition: "all 0.15s",
+          }}
+        >
+          <Box
+            sx={{
+              width: 34, height: 34, borderRadius: "50%",
+              bgcolor: "rgba(239,68,68,0.15)", color: "#ef4444",
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}
+          >
+            <LogoutRoundedIcon sx={{ fontSize: 16 }} />
+          </Box>
+          <Typography sx={{ color: "#ef4444", fontSize: 13, fontWeight: 600 }}>
+            Logout
+          </Typography>
         </Stack>
       </Box>
     </Drawer>
@@ -281,13 +702,31 @@ function RevenueChart({ shopId }: RevenueChartProps) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setLoading(true);
-    fetch(`/api/orders/shop/${shopId}/revenue?range=${tab}`)
-      .then((r) => r.json())
-      .then((d) => setData(d.records ?? []))
-      .catch(console.error)
-      .finally(() => setLoading(false));
+    let cancelled = false;
+
+    const fetchRevenue = async () => {
+      try {
+        const res = await fetch(`/api/orders/shop/${shopId}/revenue?range=${tab}`);
+        const d = await res.json();
+        if (!cancelled) setData(d.records ?? []);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
+    fetchRevenue();
+
+    return () => { cancelled = true; };
   }, [shopId, tab]);
+
+  // Reset loading when tab changes
+  const handleTabChange = (t: ChartTab) => {
+    setLoading(true);
+    setData([]);
+    setTab(t);
+  };
 
   return (
     <Card sx={{ height: "100%" }}>
@@ -301,12 +740,13 @@ function RevenueChart({ shopId }: RevenueChartProps) {
           </Box>
           <Stack direction="row" gap={0.5}>
             {(["7D", "30D", "3M"] as ChartTab[]).map((t) => (
-              <Box key={t} onClick={() => setTab(t)} sx={{
+              <Box key={t} onClick={() => handleTabChange(t)} sx={{
                 px: 1.5, py: 0.6, borderRadius: 1.5, cursor: "pointer", fontSize: 12,
                 bgcolor: tab === t ? PRIMARY : "transparent",
                 color: tab === t ? "#fff" : "#64748b",
                 border: "1px solid", borderColor: tab === t ? PRIMARY : "transparent",
-                "&:hover": { bgcolor: tab === t ? PRIMARY : "#f0f3f7" }, transition: "all 0.15s",
+                "&:hover": { bgcolor: tab === t ? PRIMARY : "#f0f3f7" },
+                transition: "all 0.15s",
               }}>
                 {t}
               </Box>
@@ -338,9 +778,10 @@ function RevenueChart({ shopId }: RevenueChartProps) {
               <YAxis yAxisId="ord" orientation="right" tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
               <Tooltip
                 contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #e8ecf0", boxShadow: "none" }}
-                formatter={(value: any, name: any) => {
+                formatter={(value, name) => {
                   const num = Number(value ?? 0);
-                  return name === "revenue" ? [fmtPrice(num), "Revenue"] : [num, "Orders"];
+                  if (name === "revenue") return [fmtPrice(num), "Revenue"];
+                  return [num, "Orders"];
                 }}
               />
               <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 12, paddingTop: 12 }} />
@@ -363,8 +804,9 @@ function OrderStatusChart({ stats }: OrderStatusChartProps) {
     ? Object.entries(stats.statusBreakdown).map(([status, count]) => ({ status, count }))
     : [];
 
+  const completedCount = stats?.statusBreakdown.completed ?? 0;
   const fulfillmentRate = stats && stats.totalOrders > 0
-    ? (((stats.statusBreakdown.paid ?? 0) + (stats.statusBreakdown.shipped ?? 0)) / stats.totalOrders * 100).toFixed(1)
+    ? ((completedCount / stats.totalOrders) * 100).toFixed(1)
     : "—";
 
   return (
@@ -523,7 +965,7 @@ function TopProducts({ shopId }: TopProductsProps) {
                     display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden",
                   }}>
                     {p.picture
-                      ? <Box component="img" src={p.picture} alt={p.name} sx={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      ? <Box component="img" src={p.picture ? `/api/${p.picture}` : "/placeholder.png"} alt={p.name} sx={{ width: "100%", height: "100%", objectFit: "cover" }} />
                       : <Typography fontSize={20}>📦</Typography>
                     }
                   </Box>
@@ -584,7 +1026,6 @@ function DashboardContent({ shop }: DashboardContentProps) {
 
       {statsError && <Alert severity="error" sx={{ mb: 2 }}>{statsError}</Alert>}
 
-      {/* KPI Stats */}
       <Grid container spacing={1.75} mb={2.25}>
         {[
           {
@@ -618,7 +1059,6 @@ function DashboardContent({ shop }: DashboardContentProps) {
         ))}
       </Grid>
 
-      {/* Charts */}
       <Grid container spacing={1.75} mb={2.25}>
         <Grid size={{ xs: 12, md: 7 }}>
           <RevenueChart shopId={shop.shop_id} />
@@ -628,7 +1068,6 @@ function DashboardContent({ shop }: DashboardContentProps) {
         </Grid>
       </Grid>
 
-      {/* Bottom */}
       <Grid container spacing={1.75}>
         <Grid size={{ xs: 12, md: 7 }}>
           <RecentOrders shopId={shop.shop_id} />
@@ -648,7 +1087,12 @@ export default function SellerDashboard() {
   const [shopLoading, setShopLoading] = useState(true);
   const [shopError, setShopError] = useState<string | null>(null);
 
+  // Logout
+  const [logoutOpen, setLogoutOpen] = useState(false);
+  const [logoutLoading, setLogoutLoading] = useState(false);
+
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
   const { userInfo } = useAppSelector((state) => state.auth);
 
   useEffect(() => {
@@ -657,12 +1101,43 @@ export default function SellerDashboard() {
     fetch(`/api/shops/user/${userInfo.user_id}`)
       .then((r) => r.json())
       .then((d) => {
-        if (d.records) setShop(d.records);
-        else setShopError("Shop not found");
+        if (d.records) {
+          const s = d.records;
+          setShop({
+            shop_id: s.shop_id,
+            name: s.name,
+            description: s.description,
+            profile_pic: s.profile_pic,
+            banner: s.banner,
+            owner_id: s.owner_id,
+          });
+        } else {
+          setShopError("Shop not found");
+        }
       })
       .catch(() => setShopError("Failed to load shop"))
       .finally(() => setShopLoading(false));
   }, [userInfo]);
+
+  const handleLogout = async () => {
+    try {
+      setLogoutLoading(true);
+      await fetch("/api/auth/logout", {
+        method: "POST",
+        credentials: "include",
+      });
+      dispatch(authActions.logout());
+      navigate("/login");
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLogoutLoading(false);
+    }
+  };
+
+  const handleShopUpdated = useCallback((updated: ShopInfo) => {
+    setShop(updated);
+  }, []);
 
   if (shopLoading) {
     return (
@@ -686,20 +1161,36 @@ export default function SellerDashboard() {
         <Sidebar
           active={activeNav}
           shop={shop}
-          onSelect={(id) => {
-            if (id === "messages") navigate("/chat-customer");
-            else setActiveNav(id);
-          }}
+          onSelect={(id) => setActiveNav(id)}
+          onLogout={() => setLogoutOpen(true)}
         />
 
         <Box sx={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-          <Box sx={{ flex: 1, p: 3, overflow: "auto" }}>
+          <Box sx={{ flex: 1, p: activeNav === "messages" ? 0 : 3, overflow: "auto" }}>
             {activeNav === "dashboard" && <DashboardContent shop={shop} />}
             {activeNav === "products" && <ProductsList />}
             {activeNav === "orders" && <OrdersList />}
+            {activeNav === "messages" && (
+              <Box sx={{ p: 3, height: "100%", boxSizing: "border-box" }}>
+                <ChatCustomerEmbed />
+              </Box>
+            )}
+            {activeNav === "shop-settings" && (
+              <ShopSettings shop={shop} onShopUpdated={handleShopUpdated} />
+            )}
           </Box>
         </Box>
       </Box>
+
+      {/* Logout confirmation */}
+      <LogoutDialog
+        open={logoutOpen}
+        loading={logoutLoading}
+        onConfirm={handleLogout}
+        onClose={() => {
+          if (!logoutLoading) setLogoutOpen(false);
+        }}
+      />
     </ThemeProvider>
   );
 }

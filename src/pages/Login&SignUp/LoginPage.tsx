@@ -5,7 +5,12 @@ import {
   Button,
   Card,
   Link as MuiLink,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from "@mui/material";
+import BlockIcon from "@mui/icons-material/Block";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { useAppDispatch } from "../../hooks/useAppDispatch";
@@ -18,6 +23,8 @@ export default function LoginPage() {
     email: "",
     password: "",
   });
+  const [suspendedOpen, setSuspendedOpen] = useState(false);
+  const [suspendedMsg, setSuspendedMsg] = useState("");
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -43,33 +50,39 @@ export default function LoginPage() {
       const data = await response.json();
 
       if (!response.ok) {
+        // ─── Handle suspended account ─────────────────
+        if (data.suspended) {
+          setSuspendedMsg(data.message);
+          setSuspendedOpen(true);
+          return;
+        }
+        // ──────────────────────────────────────────────
+
         alert(data.message || "Login failed");
         return;
       }
 
       dispatch(authActions.setUserInfo(data.user));
-
       localStorage.setItem("isLoggedIn", "true");
 
       alert(`Welcome back, ${data.user.first_name}!`);
-      dispatch(authActions.setUserInfo(data.user));
-      localStorage.setItem("isLoggedIn", "true");
 
-      // ─── Redirect logic ───────────────────────────────────────
-      if (data.user.role === "seller") {
+      if (data.user.role === "admin") {
+        navigate("/admin/dashboard");
+      } else if (data.user.role === "seller") {
         const shopRes = await fetch(`/api/shops/user/${data.user.user_id}`);
+        const shopData = await shopRes.json();
 
-        if (shopRes.status === 404) {
+        if (shopRes.status === 404 || !shopData.records) {
           navigate("/create-shop");
+          console.log("navigate to create shop");
         } else {
-          const shopData = await shopRes.json();
           dispatch(authActions.setShopInfo(shopData.records));
           navigate("/shop/dashboard");
         }
       } else {
         navigate("/");
       }
-
     } catch (error) {
       console.error(error);
       alert("Login error");
@@ -83,7 +96,7 @@ export default function LoginPage() {
         justifyContent: "center",
         alignItems: "center",
         minHeight: "80vh",
-        width: "100%"
+        width: "100%",
       }}
     >
       <Card
@@ -181,6 +194,75 @@ export default function LoginPage() {
           </MuiLink>
         </Box>
       </Card>
+
+      {/* ─── Suspended Account Dialog ─────────────────── */}
+      <Dialog
+        open={suspendedOpen}
+        onClose={() => setSuspendedOpen(false)}
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            maxWidth: 400,
+            px: 1,
+          },
+        }}
+      >
+        <DialogTitle
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 1,
+            pt: 3,
+          }}
+        >
+          <Box
+            sx={{
+              width: 56,
+              height: 56,
+              borderRadius: "50%",
+              bgcolor: "#fef2f2",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              mb: 0.5,
+            }}
+          >
+            <BlockIcon sx={{ fontSize: 30, color: "#dc2626" }} />
+          </Box>
+          <Typography fontSize={18} fontWeight={700} color="#1e293b">
+            Account Suspended
+          </Typography>
+        </DialogTitle>
+        <DialogContent>
+          <Typography
+            fontSize={14}
+            color="#64748b"
+            textAlign="center"
+            lineHeight={1.6}
+          >
+            {suspendedMsg ||
+              "Your account has been suspended. Please contact support for assistance."}
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ justifyContent: "center", pb: 3 }}>
+          <Button
+            variant="contained"
+            onClick={() => setSuspendedOpen(false)}
+            sx={{
+              bgcolor: "#dc2626",
+              borderRadius: 99,
+              textTransform: "none",
+              fontWeight: 600,
+              px: 4,
+              "&:hover": { bgcolor: "#b91c1c" },
+            }}
+          >
+            Understood
+          </Button>
+        </DialogActions>
+      </Dialog>
+      {/* ──────────────────────────────────────────────── */}
     </Box>
   );
 }

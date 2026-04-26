@@ -97,6 +97,7 @@ export default function Homepage() {
             setSnackMessage(`${product.name} berhasil ditambahkan ke keranjang!`);
             setSnackSeverity("success");
             setSnackOpen(true);
+            window.dispatchEvent(new Event("cart-updated"));
         } catch (error) {
             console.error(error);
             setSnackMessage("Gagal memasukkan ke keranjang");
@@ -625,7 +626,7 @@ export default function Homepage() {
 
                                 <Box
                                     component="img"
-                                    src={image}
+                                    src={image ? `/api/${image}` : "/placeholder.png"}
                                     sx={{
                                         width: "100%",
                                         height: "100%",

@@ -34,7 +34,7 @@ type User = {
 
 export default function UserManagementPage() {
   const navigate = useNavigate();
-  const themeColor = "#16a34a";
+  const themeColor = "#3b82f6";
 
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);

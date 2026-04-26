@@ -14,7 +14,6 @@ import {
 import TuneIcon from "@mui/icons-material/Tune";
 import StarIcon from "@mui/icons-material/Star";
 import "swiper/swiper-bundle.css";
-import banner1 from "../../assets/stock-images/home-bannerHeadset.jpg";
 import { useState } from "react";
 import { useNavigate } from "react-router";
 
@@ -53,21 +52,32 @@ export default function Wishlist() {
     const [sortPrice, setSortPrice] = useState<"high" | "low" | "">("");
     const [sortRating, setSortRating] = useState<"high" | "low" | "">("");
 
-    // ================= FETCH WISHLIST =================
-    const getWishlist = async () => {
-        if (!user_id) return;
-        try {
-            const res = await fetch(`/api/wishlist?user_id=${user_id}`);
-            const data = await res.json();
-            setItems(data.data);
-            setWishlistedIds(data.data.map((item: WishlistItem) => item.product_id));
-        } catch (error) {
-            console.error(error);
-        }
-    };
-
     useEffect(() => {
-        getWishlist();
+        if (!user_id) return;
+
+        let cancelled = false;
+
+        const fetchWishlist = async () => {
+            try {
+                const res = await fetch(`/api/wishlist?user_id=${user_id}`);
+                const data = await res.json();
+                console.log("Wishlist API response:", data); // ← Debug this
+                if (!cancelled) {
+                    const records = data.records ?? data.data ?? [];
+                    setItems(records);
+                    // ← Initialize wishlistedIds from fetched data
+                    setWishlistedIds(records.map((item: WishlistItem) => item.product_id));
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        };
+
+        fetchWishlist();
+
+        return () => {
+            cancelled = true;
+        };
     }, [user_id]);
 
     // ================= TOGGLE WISHLIST =================
@@ -310,7 +320,7 @@ export default function Wishlist() {
                                 sx={{ position: "absolute", top: 8, right: 8, zIndex: 10, backgroundColor: "white", width: 30, height: 30, boxShadow: "0 2px 6px rgba(0, 0, 0, 0.35)", color: wishlistedIds.includes(product.id) ? "rgba(255, 0, 0, 0.79)" : "#ccc", "&:hover": { backgroundColor: "white", scale: 1.15 } }}>
                                 <FavoriteIcon sx={{ fontSize: 16 }} />
                             </IconButton>
-                            <Box component="img" src={product.picture}
+                            <Box component="img" src={`/api/${product.picture}`}
                                 sx={{ width: "100%", height: "100%", objectFit: "contain", padding: "16px", transition: "transform 0.35s ease", ".MuiCard-root:hover &": { transform: "scale(1.08)" } }} />
                         </Box>
 

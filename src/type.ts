@@ -186,6 +186,8 @@ export type CartItem = {
             name: string;
             shop: {
                 name: string;
+                shop_id: string;
+                profile_pic: string;
             };
         };
     };

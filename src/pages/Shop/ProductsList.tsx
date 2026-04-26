@@ -1,12 +1,10 @@
-// ProductsList.tsx — backend integrated (GET only)
-
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import type { ReactNode, ChangeEvent } from "react";
 import {
     Box, Stack, Grid, Typography, Card, CardContent,
     InputBase, IconButton, Button, Avatar,
     Table, TableHead, TableBody, TableRow, TableCell,
-    Drawer,
+    Drawer, Dialog, DialogTitle, DialogContent, DialogActions,
     FormControl, LinearProgress, Tooltip,
     Pagination, Select, MenuItem, CircularProgress, Alert,
 } from "@mui/material";
@@ -22,6 +20,7 @@ import WarningAmberRoundedIcon from "@mui/icons-material/WarningAmberRounded";
 import TrendingUpRoundedIcon from "@mui/icons-material/TrendingUpRounded";
 import CheckCircleRoundedIcon from "@mui/icons-material/CheckCircleRounded";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
+import ErrorOutlineRoundedIcon from "@mui/icons-material/ErrorOutlineRounded";
 import { useNavigate } from "react-router";
 import type { RootState } from "../../redux/store";
 import { useSelector } from "react-redux";
@@ -64,21 +63,20 @@ interface BackendProduct {
 }
 
 // ─── UI-normalized product ────────────────────────────────────────────────────
-// Adapter layer: backend → apa yang dibutuhkan UI
 interface UIProduct {
     shop_id: string;
-    id: string;                 // product_id
+    id: string;
     name: string;
     description: string;
-    category: string;           // category.name atau category.parent.name
-    price: number;              // min price dari variants (dalam ribuan IDR)
-    stock: number;              // total stock dari semua variants
-    sold: number;               // placeholder — backend belum expose ini
-    avgRating: number;          // rata-rata ratings
+    category: string;
+    price: number;
+    stock: number;
+    sold: number;
+    avgRating: number;
     ratingCount: number;
-    picture: string | null;     // picture dari variant pertama
+    picture: string | null;
     viewCount: number;
-    raw: BackendProduct;        // simpan raw untuk detail drawer
+    raw: BackendProduct;
 }
 
 // ─── Adapter function ─────────────────────────────────────────────────────────
@@ -96,7 +94,6 @@ function adaptProduct(p: BackendProduct): UIProduct {
             ? ratings.reduce((acc, r) => acc + r.value, 0) / ratings.length
             : 0;
 
-    // Ambil nama kategori: prefer parent (level atas) kalau ada
     const categoryName =
         p.category?.name ?? p.category?.parent?.name ?? "Uncategorized";
 
@@ -108,9 +105,9 @@ function adaptProduct(p: BackendProduct): UIProduct {
         name: p.name,
         description: p.description,
         category: categoryName,
-        price: minPrice,           // sudah dalam satuan asli (IDR)
+        price: minPrice,
         stock: totalStock,
-        sold: 0,                   // backend belum expose
+        sold: 0,
         avgRating,
         ratingCount: ratings.length,
         picture: firstPic,
@@ -127,7 +124,6 @@ const stockLevel = (stock: number) => {
     return { label: "In Stock", color: "#15803d", barColor: PRIMARY };
 };
 
-// Harga dalam IDR asli (dari backend), format ke Rp
 const fmtPrice = (n: number) => {
     if (n === 0) return "—";
     if (n >= 1_000_000) return `Rp ${(n / 1_000_000).toFixed(1)}Jt`;
@@ -135,7 +131,7 @@ const fmtPrice = (n: number) => {
     return `Rp ${n}`;
 };
 
-// ─── Komponen kecil ───────────────────────────────────────────────────────────
+// ─── Summary Card ─────────────────────────────────────────────────────────────
 interface SummaryCardProps {
     icon: ReactNode;
     iconBg: string;
@@ -173,13 +169,137 @@ function SummaryCard({ icon, iconBg, iconColor, label, value, sub }: SummaryCard
     );
 }
 
-// ─── View Drawer ───────────────────────────────────────────────────────────────
+// ─── Delete Confirmation Dialog ───────────────────────────────────────────────
+interface DeleteDialogProps {
+    product: UIProduct | null;
+    open: boolean;
+    loading: boolean;
+    onClose: () => void;
+    onConfirm: () => void;
+}
+function DeleteDialog({ product, open, loading, onClose, onConfirm }: DeleteDialogProps) {
+    return (
+        <Dialog
+            open={open}
+            onClose={loading ? undefined : onClose}
+            PaperProps={{
+                sx: {
+                    borderRadius: 3,
+                    maxWidth: 400,
+                    width: "100%",
+                    p: 0,
+                },
+            }}
+        >
+            <DialogTitle sx={{ pb: 1, pt: 3, px: 3 }}>
+                <Stack direction="row" alignItems="center" gap={1.5}>
+                    <Box
+                        sx={{
+                            width: 44, height: 44, borderRadius: "12px",
+                            bgcolor: "#fee2e2", color: "#dc2626",
+                            display: "flex", alignItems: "center", justifyContent: "center",
+                        }}
+                    >
+                        <ErrorOutlineRoundedIcon sx={{ fontSize: 22 }} />
+                    </Box>
+                    <Box>
+                        <Typography sx={{ fontSize: 16, fontWeight: 700, color: "#0d1f13" }}>
+                            Delete Product
+                        </Typography>
+                        <Typography sx={{ fontSize: 12, color: "#94a3b8", mt: 0.2 }}>
+                            This action cannot be undone
+                        </Typography>
+                    </Box>
+                </Stack>
+            </DialogTitle>
+
+            <DialogContent sx={{ px: 3, pt: 2, pb: 1 }}>
+                {product && (
+                    <Box
+                        sx={{
+                            display: "flex", alignItems: "center", gap: 1.5,
+                            p: 1.5, bgcolor: "#fef2f2", borderRadius: 2,
+                            border: "1px solid #fecaca", mb: 2,
+                        }}
+                    >
+                        <Avatar
+                            src={product.picture ? `/api/${product.picture}` : "/placeholder.png"}
+                            sx={{
+                                width: 40, height: 40,
+                                bgcolor: "#fee2e2", fontSize: 18, borderRadius: 1.5,
+                            }}
+                        >
+                            📦
+                        </Avatar>
+                        <Box sx={{ flex: 1, minWidth: 0 }}>
+                            <Typography
+                                sx={{
+                                    fontSize: 13, fontWeight: 600, color: "#0d1f13",
+                                    overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                                }}
+                            >
+                                {product.name}
+                            </Typography>
+                            <Typography sx={{ fontSize: 11.5, color: "#94a3b8" }}>
+                                {product.raw.variants?.length ?? 0} variant{(product.raw.variants?.length ?? 0) !== 1 ? "s" : ""} · {product.stock} total stock
+                            </Typography>
+                        </Box>
+                    </Box>
+                )}
+
+                <Typography sx={{ fontSize: 13, color: "#475569", lineHeight: 1.6 }}>
+                    Are you sure you want to delete <strong>{product?.name}</strong>?
+                    All variants and associated data will be permanently removed.
+                </Typography>
+            </DialogContent>
+
+            <DialogActions sx={{ px: 3, pb: 2.5, pt: 1.5, gap: 1 }}>
+                <Button
+                    onClick={onClose}
+                    disabled={loading}
+                    sx={{
+                        flex: 1, textTransform: "none", fontWeight: 600,
+                        borderRadius: 2, color: "#475569", fontSize: 13,
+                        border: "1px solid #e2e8f0",
+                        "&:hover": { bgcolor: "#f8fafc", borderColor: "#cbd5e1" },
+                    }}
+                >
+                    Cancel
+                </Button>
+                <Button
+                    onClick={onConfirm}
+                    disabled={loading}
+                    variant="contained"
+                    sx={{
+                        flex: 1, textTransform: "none", fontWeight: 600,
+                        borderRadius: 2, fontSize: 13,
+                        bgcolor: "#dc2626",
+                        "&:hover": { bgcolor: "#b91c1c" },
+                        "&.Mui-disabled": { bgcolor: "#fca5a5", color: "#fff" },
+                    }}
+                >
+                    {loading ? (
+                        <Stack direction="row" alignItems="center" gap={1}>
+                            <CircularProgress size={16} sx={{ color: "#fff" }} />
+                            Deleting…
+                        </Stack>
+                    ) : (
+                        "Delete Product"
+                    )}
+                </Button>
+            </DialogActions>
+        </Dialog>
+    );
+}
+
+// ─── View Drawer ──────────────────────────────────────────────────────────────
 interface ViewDrawerProps {
     product: UIProduct | null;
     onClose: () => void;
     onEdit: (p: UIProduct) => void;
+    onDelete: (p: UIProduct) => void;
 }
-function ViewDrawer({ product, onClose, onEdit }: ViewDrawerProps) {
+function ViewDrawer({ product, onClose, onEdit, onDelete }: ViewDrawerProps) {
     if (!product) return null;
     const sl = stockLevel(product.stock);
     const variants = product.raw.variants ?? [];
@@ -214,7 +334,7 @@ function ViewDrawer({ product, onClose, onEdit }: ViewDrawerProps) {
                     {product.picture ? (
                         <Box
                             component="img"
-                            src={product.picture}
+                            src={product.picture ? `/api/${product.picture}` : "/placeholder.png"}
                             alt={product.name}
                             sx={{ width: 72, height: 72, objectFit: "cover", borderRadius: 2, mb: 1.5 }}
                         />
@@ -297,7 +417,7 @@ function ViewDrawer({ product, onClose, onEdit }: ViewDrawerProps) {
                                     {v.picture && (
                                         <Box
                                             component="img"
-                                            src={v.picture}
+                                            src={v.picture ? `/api/${v.picture}` : "/placeholder.png"}
                                             alt={v.name}
                                             sx={{ width: 36, height: 36, objectFit: "cover", borderRadius: 1 }}
                                         />
@@ -329,31 +449,42 @@ function ViewDrawer({ product, onClose, onEdit }: ViewDrawerProps) {
 
             {/* Footer */}
             <Box sx={{ px: 3, py: 2, borderTop: "1px solid #e8ecf0" }}>
-                <Button
-                    fullWidth variant="contained" size="small"
-                    startIcon={<EditRoundedIcon fontSize="small" />}
-                    onClick={() => onEdit(product)}
-                    sx={{
-                        bgcolor: PRIMARY, "&:hover": { bgcolor: "#00502f" },
-                        textTransform: "none", fontWeight: 600,
-                    }}
-                >
-                    Edit Product
-                </Button>
+                <Stack direction="row" gap={1}>
+                    <Button
+                        fullWidth variant="contained" size="small"
+                        startIcon={<EditRoundedIcon fontSize="small" />}
+                        onClick={() => onEdit(product)}
+                        sx={{
+                            bgcolor: PRIMARY, "&:hover": { bgcolor: "#00502f" },
+                            textTransform: "none", fontWeight: 600,
+                        }}
+                    >
+                        Edit
+                    </Button>
+                    <Button
+                        fullWidth variant="outlined" size="small"
+                        startIcon={<DeleteRoundedIcon fontSize="small" />}
+                        onClick={() => onDelete(product)}
+                        sx={{
+                            borderColor: "#fca5a5", color: "#dc2626",
+                            "&:hover": { bgcolor: "#fef2f2", borderColor: "#dc2626" },
+                            textTransform: "none", fontWeight: 600,
+                        }}
+                    >
+                        Delete
+                    </Button>
+                </Stack>
             </Box>
         </Drawer>
     );
 }
 
-// ─── Konstanta ────────────────────────────────────────────────────────────────
+// ─── Constants ────────────────────────────────────────────────────────────────
 const PAGE_SIZE = 8;
-
-// Kategori diambil dinamis dari data, tapi fallback ke semua
 const ALL_LABEL = "All";
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function ProductsList() {
-    // ── State ──────────────────────────────────────────────────────────────────
     const [products, setProducts] = useState<UIProduct[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -364,42 +495,91 @@ export default function ProductsList() {
 
     const [viewProduct, setViewProduct] = useState<UIProduct | null>(null);
 
-    const navigate = useNavigate();
+    // Delete state
+    const [deleteTarget, setDeleteTarget] = useState<UIProduct | null>(null);
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [deleteLoading, setDeleteLoading] = useState(false);
+    const [deleteError, setDeleteError] = useState<string | null>(null);
+    const [deleteSuccess, setDeleteSuccess] = useState<string | null>(null);
 
+    const navigate = useNavigate();
     const { userInfo } = useSelector((state: RootState) => state.auth);
 
     // ── Fetch ──────────────────────────────────────────────────────────────────
+    const fetchProducts = useCallback(async () => {
+        try {
+            setLoading(true);
+            setError(null);
+
+            const res = await fetch("/api/products");
+            if (!res.ok) throw new Error(`Server error: ${res.status}`);
+
+            const data = await res.json();
+            const raw: BackendProduct[] = Array.isArray(data.records) ? data.records : [];
+
+            console.log(userInfo?.shop_info?.shop_id);
+
+            setProducts(
+                raw
+                    .map(adaptProduct)
+                    .filter((p) => p.shop_id === userInfo?.shop_info?.shop_id)
+            );
+        } catch (err) {
+            setError(err instanceof Error ? err.message : "Unknown error");
+        } finally {
+            setLoading(false);
+        }
+    }, [userInfo?.shop_info?.shop_id]);
+
     useEffect(() => {
-        const fetchProducts = async () => {
-            try {
-                setLoading(true);
-                setError(null);
-
-                const res = await fetch("/api/products");   // sesuaikan base URL jika perlu
-
-                if (!res.ok) throw new Error(`Server error: ${res.status}`);
-
-                const data = await res.json();
-
-                // Backend response: { message, records: BackendProduct[] }
-                const raw: BackendProduct[] = Array.isArray(data.records)
-                    ? data.records
-                    : [];
-
-                setProducts(raw.map(adaptProduct).filter((p) => p.shop_id === userInfo?.shop_info?.shop_id));
-
-            } catch (err) {
-                setError(err instanceof Error ? err.message : "Unknown error");
-            } finally {
-                setLoading(false);
-            }
-        };
-
         fetchProducts();
-    }, []);
+    }, [fetchProducts]);
+
+    // ── Delete handlers ────────────────────────────────────────────────────────
+    const openDeleteDialog = (product: UIProduct) => {
+        setViewProduct(null);  // close drawer if open
+        setDeleteTarget(product);
+        setDeleteDialogOpen(true);
+        setDeleteError(null);
+    };
+
+    const closeDeleteDialog = () => {
+        if (deleteLoading) return;
+        setDeleteDialogOpen(false);
+        setDeleteTarget(null);
+    };
+
+    const confirmDelete = async () => {
+        if (!deleteTarget) return;
+
+        try {
+            setDeleteLoading(true);
+            setDeleteError(null);
+
+            const res = await fetch(`/api/products/${deleteTarget.id}`, {
+                method: "DELETE",
+            });
+
+            if (!res.ok) {
+                const errData = await res.json();
+                throw new Error(errData.message || "Failed to delete product");
+            }
+
+            // Remove from local state immediately
+            setProducts((prev) => prev.filter((p) => p.id !== deleteTarget.id));
+
+            setDeleteSuccess(`"${deleteTarget.name}" has been deleted successfully.`);
+            setTimeout(() => setDeleteSuccess(null), 4000);
+
+            closeDeleteDialog();
+        } catch (err) {
+            setDeleteError(err instanceof Error ? err.message : "Failed to delete product");
+        } finally {
+            setDeleteLoading(false);
+        }
+    };
 
     // ── Derived ────────────────────────────────────────────────────────────────
-    // Kategori unik dari data
     const categories = useMemo(() => {
         const cats = [...new Set(products.map((p) => p.category))].sort();
         return [ALL_LABEL, ...cats];
@@ -417,7 +597,6 @@ export default function ProductsList() {
     const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
     const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-    // Summary stats
     const totalStock = products.reduce((acc, p) => acc + p.stock, 0);
     const lowStockCount = products.filter((p) => p.stock > 0 && p.stock <= 10).length;
     const outOfStock = products.filter((p) => p.stock === 0).length;
@@ -444,7 +623,7 @@ export default function ProductsList() {
         );
     }
 
-    // ── Render: main ──────────────────────────────────────────────────────────
+    // ── Render ─────────────────────────────────────────────────────────────────
     return (
         <Box sx={{ flex: 1, overflowY: "auto", bgcolor: BG }}>
             {/* Page header */}
@@ -467,6 +646,26 @@ export default function ProductsList() {
                     Add Product
                 </Button>
             </Stack>
+
+            {/* Success / Error alerts */}
+            {deleteSuccess && (
+                <Alert
+                    severity="success"
+                    onClose={() => setDeleteSuccess(null)}
+                    sx={{ mb: 2, borderRadius: 2 }}
+                >
+                    {deleteSuccess}
+                </Alert>
+            )}
+            {deleteError && !deleteDialogOpen && (
+                <Alert
+                    severity="error"
+                    onClose={() => setDeleteError(null)}
+                    sx={{ mb: 2, borderRadius: 2 }}
+                >
+                    {deleteError}
+                </Alert>
+            )}
 
             {/* Summary cards */}
             <Grid container spacing={1.75} mb={2.5}>
@@ -511,7 +710,6 @@ export default function ProductsList() {
                     {/* Toolbar */}
                     <Box sx={{ px: 2.5, pt: 2.5, pb: 2, borderBottom: "1px solid #f1f5f9" }}>
                         <Stack direction={{ xs: "column", sm: "row" }} gap={1.5} alignItems={{ sm: "center" }}>
-                            {/* Search */}
                             <Box
                                 sx={{
                                     display: "flex", alignItems: "center", gap: 1,
@@ -531,7 +729,6 @@ export default function ProductsList() {
                                 />
                             </Box>
 
-                            {/* Category filter */}
                             <Stack direction="row" gap={1} flexWrap="wrap" alignItems="center">
                                 <FilterListRoundedIcon sx={{ fontSize: 16, color: "#94a3b8" }} />
                                 <FormControl size="small" sx={{ minWidth: 160 }}>
@@ -582,7 +779,7 @@ export default function ProductsList() {
                             {paginated.length === 0 ? (
                                 <TableRow>
                                     <TableCell
-                                        colSpan={8}
+                                        colSpan={7}
                                         sx={{ textAlign: "center", py: 5, color: "#94a3b8", fontSize: 13 }}
                                     >
                                         No products match your filters.
@@ -601,11 +798,10 @@ export default function ProductsList() {
                                             }}
                                             onClick={() => setViewProduct(p)}
                                         >
-                                            {/* Product */}
                                             <TableCell sx={{ borderBottom: "1px solid #f8fafc", py: 1.25 }}>
                                                 <Stack direction="row" alignItems="center" gap={1.25}>
                                                     <Avatar
-                                                        src={p.picture ?? undefined}
+                                                        src={p.picture ? `/api/${p.picture}` : "/placeholder.png"}
                                                         sx={{
                                                             width: 34, height: 34,
                                                             bgcolor: BG, fontSize: 17, borderRadius: 1.5,
@@ -625,7 +821,6 @@ export default function ProductsList() {
                                                 </Stack>
                                             </TableCell>
 
-                                            {/* ID */}
                                             <TableCell
                                                 sx={{
                                                     fontSize: 11.5, color: "#94a3b8",
@@ -639,7 +834,6 @@ export default function ProductsList() {
                                                 {p.id.slice(0, 8)}…
                                             </TableCell>
 
-                                            {/* Category */}
                                             <TableCell
                                                 sx={{
                                                     fontSize: 12.5, color: "#475569",
@@ -649,7 +843,6 @@ export default function ProductsList() {
                                                 {p.category}
                                             </TableCell>
 
-                                            {/* Price */}
                                             <TableCell
                                                 sx={{
                                                     fontSize: 13, fontWeight: 600, color: "#0d1f13",
@@ -659,7 +852,6 @@ export default function ProductsList() {
                                                 {fmtPrice(p.price)}
                                             </TableCell>
 
-                                            {/* Stock */}
                                             <TableCell sx={{ borderBottom: "1px solid #f8fafc", minWidth: 90 }}>
                                                 <Stack gap={0.4}>
                                                     <Typography sx={{ fontSize: 12.5, fontWeight: 600, color: sl.color }}>
@@ -679,7 +871,6 @@ export default function ProductsList() {
                                                 </Stack>
                                             </TableCell>
 
-                                            {/* Rating */}
                                             <TableCell
                                                 sx={{ fontSize: 12.5, color: "#475569", borderBottom: "1px solid #f8fafc" }}
                                             >
@@ -689,14 +880,6 @@ export default function ProductsList() {
                                                 }
                                             </TableCell>
 
-                                            {/* Views */}
-                                            {/* <TableCell
-                                                sx={{ fontSize: 12.5, color: "#475569", borderBottom: "1px solid #f8fafc" }}
-                                            >
-                                                {p.viewCount.toLocaleString()}
-                                            </TableCell> */}
-
-                                            {/* Actions */}
                                             <TableCell
                                                 sx={{ borderBottom: "1px solid #f8fafc" }}
                                                 onClick={(e) => e.stopPropagation()}
@@ -720,13 +903,17 @@ export default function ProductsList() {
                                                             <EditRoundedIcon sx={{ fontSize: 16 }} />
                                                         </IconButton>
                                                     </Tooltip>
-                                                    <Tooltip title="Delete (coming soon)" placement="top">
-                                                        <span>
-                                                            <IconButton size="small" disabled
-                                                                sx={{ color: "#94a3b8" }}>
-                                                                <DeleteRoundedIcon sx={{ fontSize: 16 }} />
-                                                            </IconButton>
-                                                        </span>
+                                                    <Tooltip title="Delete" placement="top">
+                                                        <IconButton
+                                                            size="small"
+                                                            onClick={() => openDeleteDialog(p)}
+                                                            sx={{
+                                                                color: "#94a3b8",
+                                                                "&:hover": { color: "#dc2626", bgcolor: "#fef2f2" },
+                                                            }}
+                                                        >
+                                                            <DeleteRoundedIcon sx={{ fontSize: 16 }} />
+                                                        </IconButton>
                                                     </Tooltip>
                                                 </Stack>
                                             </TableCell>
@@ -768,6 +955,19 @@ export default function ProductsList() {
                     setViewProduct(null);
                     navigate(`/shop/edit-product/${p.id}`);
                 }}
+                onDelete={(p) => {
+                    setViewProduct(null);
+                    openDeleteDialog(p);
+                }}
+            />
+
+            {/* Delete Confirmation Dialog */}
+            <DeleteDialog
+                product={deleteTarget}
+                open={deleteDialogOpen}
+                loading={deleteLoading}
+                onClose={closeDeleteDialog}
+                onConfirm={confirmDelete}
             />
         </Box>
     );

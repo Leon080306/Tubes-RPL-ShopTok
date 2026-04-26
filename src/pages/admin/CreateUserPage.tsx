@@ -36,7 +36,7 @@ const INITIAL_FORM: FormState = {
 
 export default function CreateUserPage() {
     const navigate = useNavigate();
-    const themeColor = "#16a34a";
+    const themeColor = "#3b82f6";
 
     const [form, setForm] = useState<FormState>(INITIAL_FORM);
     const [showPassword, setShowPassword] = useState(false);

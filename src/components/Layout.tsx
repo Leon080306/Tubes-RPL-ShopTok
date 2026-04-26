@@ -15,9 +15,8 @@ import {
   Typography,
 } from "@mui/material";
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
-import { Link, Outlet, useNavigate } from "react-router";
+import { Link, Outlet, useLocation, useNavigate } from "react-router";
 import AppLogoInline from "../assets/logos/AppLogo-inline.png";
-import AppLogoOnly from "../assets/logos/AppLogo-iconOnly.png";
 import PersonOutlinedIcon from "@mui/icons-material/PersonOutlined";
 import ShoppingCartOutlinedIcon from "@mui/icons-material/ShoppingCartOutlined";
 import SearchIcon from "@mui/icons-material/Search";
@@ -97,6 +96,13 @@ export function Layout() {
   const navigate = useNavigate();
   const { userInfo } = useAppSelector((state) => state.auth);
 
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const location = useLocation();
+
+  useEffect(() => {
+    scrollRef.current?.scrollTo(0, 0);
+  }, [location.pathname]);
+
   // ─── Fetch All Products (once) ───────────────────────────
   useEffect(() => {
     const fetchProducts = async () => {
@@ -167,8 +173,14 @@ export function Layout() {
   // Refresh on window focus
   useEffect(() => {
     const handleFocus = () => fetchCartItems();
+    const handleCartUpdate = () => fetchCartItems();
+
+    window.addEventListener("cart-updated", handleCartUpdate);
     window.addEventListener("focus", handleFocus);
-    return () => window.removeEventListener("focus", handleFocus);
+    return () => {
+      window.removeEventListener("cart-updated", handleCartUpdate);
+      window.removeEventListener("focus", handleFocus);
+    }
   }, [fetchCartItems]);
 
   const cartCount = cartItems.length;
@@ -485,9 +497,7 @@ export function Layout() {
                                   }}
                                 >
                                   <img
-                                    src={
-                                      category.icon
-                                    }
+                                    src={`/api/${category.icon}`}
                                     style={{
                                       width: "60px",
                                       height: "60px",
@@ -596,10 +606,7 @@ export function Layout() {
                                 }}
                               >
                                 <img
-                                  src={
-                                    product.picture ||
-                                    AppLogoOnly
-                                  }
+                                  src={`/api/${product.picture}`}
                                   style={{
                                     width: "60px",
                                     height: "60px",
@@ -781,7 +788,7 @@ export function Layout() {
                 </Link>
 
                 {/* ── Cart Floating Preview ── */}
-                {cartHovered && userInfo && (
+                {cartHovered && userInfo && cartItems.length > 0 && (
                   <Paper
                     elevation={8}
                     onMouseEnter={handleCartMouseEnter}
@@ -912,11 +919,7 @@ export function Layout() {
                               {/* Image */}
                               <Box
                                 component="img"
-                                src={
-                                  item.variant
-                                    ?.picture ||
-                                  "/placeholder.png"
-                                }
+                                src={`/api/${item.variant.picture}`}
                                 alt={
                                   item.variant
                                     ?.product
@@ -1074,6 +1077,7 @@ export function Layout() {
       </AppBar>
 
       <Box
+        ref={scrollRef}
         sx={{
           paddingInline: "64px",
           paddingBlock: "12px",

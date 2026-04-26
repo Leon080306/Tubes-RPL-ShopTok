@@ -236,7 +236,7 @@ export default function ChatToko() {
               alignItems: "center",
             }}
           >
-            <IconButton onClick={() => navigate("/profile")} sx={{ color: "white", mr: 1 }}>
+            <IconButton onClick={() => navigate(-1)} sx={{ color: "white", mr: 1 }}>
               <ArrowBackIcon />
             </IconButton>
             <Typography variant="h6" fontWeight={600}>

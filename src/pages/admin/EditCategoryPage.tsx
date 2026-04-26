@@ -193,7 +193,7 @@ export default function EditCategoryPage() {
                                 type="submit"
                                 variant="contained"
                                 sx={{
-                                    bgcolor: "#16a34a",
+                                    bgcolor: "#3b82f6",
                                     textTransform: "none",
                                 }}
                             >

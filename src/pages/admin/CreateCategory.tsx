@@ -20,7 +20,7 @@ type Category = {
 
 export default function CreateCategoryPage() {
     const navigate = useNavigate();
-    const themeColor = "#16a34a";
+    const themeColor = "#3b82f6";
 
     const [name, setName] = useState("");
     const [parent, setParent] = useState("");

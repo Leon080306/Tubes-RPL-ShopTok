@@ -4,7 +4,7 @@ import {
   Avatar, Box, Typography, Button, Stack, Container,
   Paper, Divider, Tabs, Tab, Grid, Card, CardContent, CardMedia,
   MenuItem, Select, FormControl, InputBase, IconButton,
-  List, ListItemButton, ListItemText
+  List, ListItemButton, ListItemText,
 } from "@mui/material";
 import {
   Verified as VerifiedIcon,
@@ -37,24 +37,26 @@ const formatCount = (n: number): string | number => {
   return n;
 };
 
+const getImageUrl = (path?: string | null): string => {
+  if (!path) return "/placeholder.png";
+  if (path.startsWith("http")) return path;
+  return `/api/${path}`;
+};
+
 const getJoinDuration = (dateString?: string): string => {
   if (!dateString) return "-";
-
   const created = new Date(dateString);
   const now = new Date();
-
   const diffYears = now.getFullYear() - created.getFullYear();
   if (diffYears > 0) return `${diffYears} Thn Lalu`;
-
   const diffMonths =
     now.getMonth() + 12 * now.getFullYear() - (created.getMonth() + 12 * created.getFullYear());
   if (diffMonths > 0) return `${diffMonths} Bulan Lalu`;
-
   const diffDays = Math.floor((now.getTime() - created.getTime()) / (1000 * 60 * 60 * 24));
   return `${diffDays} Hari Lalu`;
 };
 
-// ─── Sub-components (declared outside ShopProfile to avoid re-creation) ───────
+// ─── SearchBar ────────────────────────────────────────────────────────────────
 
 type SearchBarProps = {
   searchQuery: string;
@@ -86,77 +88,93 @@ const SearchBar = ({ searchQuery, setSearchQuery }: SearchBarProps) => (
   </Paper>
 );
 
+// ─── ProductGrid ──────────────────────────────────────────────────────────────
+
 type ProductGridProps = {
   products: NormalizedProduct[];
   onNavigate: (id: string | undefined) => void;
 };
 
-const ProductGrid = ({ products, onNavigate }: ProductGridProps) => (
-  <Grid container spacing={2}>
-    {products.map((p) => (
-      <Grid size={{ xs: 6, md: 2.4 }} key={p.id}>
-        <Card
-          onClick={() => onNavigate(p.id)}
-          elevation={0}
-          sx={{
-            border: "1px solid #eee",
-            borderRadius: 2,
-            overflow: "hidden",
-            cursor: "pointer",
-            transition: "all 0.25s ease",
-            backgroundColor: "#fff",
-            "&:hover": {
-              borderColor: "#003f29",
-              transform: "translateY(-4px)",
-              boxShadow: "0 8px 24px rgba(0, 0, 0, 0.12)",
-            },
-          }}
-        >
-          <Box sx={{ overflow: "hidden" }}>
-            <CardMedia
-              component="img"
-              height="180"
-              image={p.image}
-              sx={{
-                transition: "transform 0.35s ease",
-                "&:hover": { transform: "scale(1.08)" },
-              }}
-            />
-          </Box>
+const ProductGrid = ({ products, onNavigate }: ProductGridProps) => {
+  if (products.length === 0) {
+    return (
+      <Box sx={{ textAlign: "center", py: 6 }}>
+        <Typography color="text.secondary">Tidak ada produk ditemukan</Typography>
+      </Box>
+    );
+  }
 
-          <CardContent sx={{ p: 1.5 }}>
-            <Typography
-              variant="body2"
-              sx={{
-                height: 40,
-                overflow: "hidden",
-                mb: 1,
-                display: "-webkit-box",
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: "vertical",
-              }}
-            >
-              {p.name}
-            </Typography>
+  return (
+    <Grid container spacing={2}>
+      {products.map((p) => (
+        <Grid size={{ xs: 6, md: 2.4 }} key={p.id}>
+          <Card
+            onClick={() => onNavigate(p.id)}
+            elevation={0}
+            sx={{
+              border: "1px solid #eee",
+              borderRadius: 2,
+              overflow: "hidden",
+              cursor: "pointer",
+              transition: "all 0.25s ease",
+              backgroundColor: "#fff",
+              "&:hover": {
+                borderColor: "#003f29",
+                transform: "translateY(-4px)",
+                boxShadow: "0 8px 24px rgba(0, 0, 0, 0.12)",
+              },
+            }}
+          >
+            <Box sx={{ overflow: "hidden" }}>
+              <CardMedia
+                component="img"
+                height="180"
+                image={getImageUrl(p.image)}
+                alt={p.name}
+                sx={{
+                  objectFit: "cover",
+                  transition: "transform 0.35s ease",
+                  "&:hover": { transform: "scale(1.08)" },
+                }}
+              />
+            </Box>
 
-            <Typography variant="subtitle1" fontWeight="bold" color="#ee4d2d">
-              {formatPrice(p.price)}
-            </Typography>
-
-            <Stack direction="row" justifyContent="space-between" sx={{ mt: 1 }}>
-              <Typography variant="caption" color="text.secondary">
-                ⭐ {p.rating}
+            <CardContent sx={{ p: 1.5 }}>
+              <Typography
+                variant="body2"
+                sx={{
+                  height: 40,
+                  overflow: "hidden",
+                  mb: 1,
+                  display: "-webkit-box",
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: "vertical",
+                }}
+              >
+                {p.name}
               </Typography>
-              <Typography variant="caption" color="text.secondary">
-                {p.sales} terjual
+
+              <Typography variant="subtitle1" fontWeight="bold" color="#ee4d2d">
+                {formatPrice(p.price)}
               </Typography>
-            </Stack>
-          </CardContent>
-        </Card>
-      </Grid>
-    ))}
-  </Grid>
-);
+
+              <Stack direction="row" justifyContent="space-between" sx={{ mt: 1 }}>
+                <Typography variant="caption" color="text.secondary">
+                  ⭐ {p.rating.toFixed(1)}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {p.sales} terjual
+                </Typography>
+              </Stack>
+            </CardContent>
+          </Card>
+        </Grid>
+      ))}
+    </Grid>
+  );
+};
+
+// ─── HalamanUtama ─────────────────────────────────────────────────────────────
 
 type HalamanUtamaProps = {
   shop: ShopInfo;
@@ -202,7 +220,12 @@ const HalamanUtama = ({ shop, normalizedProducts, onNavigate }: HalamanUtamaProp
     <Paper
       sx={{ height: { xs: 150, md: 300 }, bgcolor: "#e0e0e0", borderRadius: 2, overflow: "hidden" }}
     >
-      <CardMedia component="img" image={shop.banner} sx={{ height: "100%", objectFit: "cover" }} />
+      <CardMedia
+        component="img"
+        image={getImageUrl(shop.banner)}
+        alt={`${shop.name} banner`}
+        sx={{ height: "100%", objectFit: "cover" }}
+      />
     </Paper>
 
     {/* Kamu Mungkin Suka */}
@@ -232,34 +255,42 @@ export default function ShopProfile() {
   const { userInfo } = useSelector((state: RootState) => state.auth);
 
   useEffect(() => {
+    if (!shopId) return;
+    let cancelled = false;
+
     const fetchShop = async () => {
       try {
         const res = await fetch(`/api/shops/${shopId}`);
         const data = await res.json();
-        setShop(data.records);
+        if (!cancelled) setShop(data.records);
       } catch (err) {
         console.error(err);
       }
     };
+
     fetchShop();
+    return () => { cancelled = true; };
   }, [shopId]);
 
   useEffect(() => {
+    if (!shopId) return;
+    let cancelled = false;
+
     const fetchProducts = async () => {
       try {
         const res = await fetch(`/api/products`);
         const data = await res.json();
-        // filter berdasarkan shop_id
-        const filtered = data.records.filter((p: Product) => p.shop_id === shopId);
-        setProducts(filtered);
+        const filtered = (data.records ?? []).filter((p: Product) => p.shop_id === shopId);
+        if (!cancelled) setProducts(filtered);
       } catch (err) {
         console.error(err);
       }
     };
+
     fetchProducts();
+    return () => { cancelled = true; };
   }, [shopId]);
 
-  // Products without ratings are excluded (same as original `return {}` + downstream crash)
   const normalizedProducts = useMemo<NormalizedProduct[]>(() => {
     return products
       .filter((p: Product) => !!p.ratings)
@@ -296,7 +327,6 @@ export default function ShopProfile() {
   }, [normalizedProducts]);
 
   const filteredAndSortedProducts = useMemo<NormalizedProduct[]>(() => {
-    // 1. Filter berdasarkan Search Query & Kategori
     const result = normalizedProducts.filter((p) => {
       const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesCategory = selectedCategory
@@ -305,7 +335,6 @@ export default function ShopProfile() {
       return matchesSearch && matchesCategory;
     });
 
-    // 2. Sort berdasarkan sortValue
     return [...result].sort((a, b) => {
       switch (sortValue) {
         case "terlaris":
@@ -322,7 +351,6 @@ export default function ShopProfile() {
   }, [normalizedProducts, searchQuery, selectedCategory, sortValue]);
 
   const totalProducts = useMemo(() => products.length, [products]);
-
   const joinLabel = useMemo(() => getJoinDuration(shop?.createdAt), [shop]);
 
   const handleNavigate = (id: string | undefined) => navigate(`/product/${id}`);
@@ -349,10 +377,9 @@ export default function ShopProfile() {
       <Box sx={{ bgcolor: "#003f29", color: "white", pt: 4, pb: 8 }}>
         <Container maxWidth="lg">
           <Stack direction={{ xs: "column", md: "row" }} spacing={4} alignItems="center">
-            {/* Kiri: Avatar & Nama */}
             <Stack direction="row" spacing={2} alignItems="center" sx={{ flexGrow: 1 }}>
               <Avatar
-                src={shop.profile_pic}
+                src={getImageUrl(shop.profile_pic)}
                 sx={{ width: 80, height: 80, border: "2px solid rgba(255,255,255,0.5)" }}
               >
                 <StorefrontIcon sx={{ fontSize: 40 }} />
@@ -370,18 +397,13 @@ export default function ShopProfile() {
                     sx={{ color: "white", borderColor: "white", textTransform: "none" }}
                     onClick={async (e) => {
                       e.stopPropagation();
-
                       if (!shop || !userInfo) return;
-
                       const success = await startChat(
-                        userInfo?.user_id,
-                        shop?.shop_id,
+                        userInfo.user_id,
+                        shop.shop_id,
                         `Halo, saya ingin bertanya tentang toko ${shop.name}`
                       );
-
-                      if (success) {
-                        navigate(`/chattoko?shop_id=${shop.shop_id}`);
-                      }
+                      if (success) navigate(`/chattoko?shop_id=${shop.shop_id}`);
                     }}
                   >
                     Chat
@@ -390,13 +412,12 @@ export default function ShopProfile() {
               </Box>
             </Stack>
 
-            {/* Kanan: Statistik Ringkas */}
             <Grid container spacing={2} sx={{ maxWidth: 500 }}>
               {[
                 { label: "Produk", val: formatCount(totalProducts) },
                 { label: "Bergabung", val: joinLabel },
               ].map((stat, i) => (
-                <Grid size={{ xs: 20 }} key={i}>
+                <Grid size={{ xs: 6 }} key={i}>
                   <Typography variant="caption" sx={{ display: "block", opacity: 0.7 }}>
                     {stat.label}:
                   </Typography>
@@ -423,7 +444,6 @@ export default function ShopProfile() {
               value={tabValue}
               onChange={(_, v) => {
                 setTabValue(v);
-                // reset filter saat keluar dari tab kategori
                 if (v !== 2) setSelectedCategory(null);
               }}
               TabIndicatorProps={{ sx: { bgcolor: "#003f29", height: 3 } }}

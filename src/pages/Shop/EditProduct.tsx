@@ -52,9 +52,30 @@ export default function EditProductPage() {
                 const categoryData = await categoryRes.json();
                 const product = productData.records;
 
+                // Flatten categories (parent + children all in one flat list)
+                const flatCategories: Category[] = (categoryData.records || []).map((c: any) => ({
+                    category_id: String(c.category_id),
+                    name: c.name,
+                }));
+
+                const productCategoryId = String(product.category_id);
+
+                // If product's category isn't in the list (e.g. soft-deleted),
+                // add it from the included category object so the select still works
+                if (!flatCategories.some(c => c.category_id === productCategoryId)) {
+                    const included = product.category;
+                    if (included) {
+                        flatCategories.unshift({
+                            category_id: String(included.category_id),
+                            name: `${included.name} (archived)`,
+                        });
+                    }
+                }
+
                 setName(product.name);
                 setDescription(product.description);
-                setCategory(product.category_id);
+                setCategory(productCategoryId);
+                setCategories(flatCategories);
                 setVariants(
                     (product.variants ?? []).map((v: any) => ({
                         variant_id: v.variant_id,
@@ -65,7 +86,6 @@ export default function EditProductPage() {
                         existingPicture: v.picture,
                     }))
                 );
-                setCategories(categoryData.records || []);
             } catch {
                 setError("Failed to load product data");
             } finally {
@@ -242,10 +262,13 @@ export default function EditProductPage() {
 
                         <Stack gap={2}>
                             {variants.map((variant, i) => {
-                                const previewSrc = variant.picture
-                                    ? URL.createObjectURL(variant.picture)
-                                    : variant.existingPicture || null;
+                                let previewSrc = null;
 
+                                if (variant.picture) {
+                                    previewSrc = URL.createObjectURL(variant.picture);
+                                } else if (variant.existingPicture) {
+                                    previewSrc = `/api/${variant.existingPicture}`;
+                                }
                                 return (
                                     <Box
                                         key={variant.variant_id ?? i}

@@ -220,7 +220,7 @@ export default function OrderDetailPage() {
                             </Typography>
                             <Box display="flex" alignItems="center" gap={1.5}>
                                 <Avatar
-                                    src={shop.profile_pic}
+                                    src={`/api/${shop.profile_pic}`}
                                     sx={{ width: 36, height: 36 }}
                                 >
                                     {shop.name?.[0]}
@@ -349,7 +349,7 @@ export default function OrderDetailPage() {
                     <Box display="flex" gap={2}>
                         <Avatar
                             variant="rounded"
-                            src={item.variant.picture || "/placeholder.png"}
+                            src={item.variant.picture ? `/api/${item.variant.picture}` : "/placeholder.png"}
                             sx={{ width: 80, height: 80 }}
                         />
                         <Box>

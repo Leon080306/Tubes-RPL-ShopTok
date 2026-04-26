@@ -130,6 +130,7 @@ export default function ProductPage() {
       setSnackMessage("Produk berhasil ditambahkan ke keranjang!");
       setSnackSeverity("success");
       setSnackOpen(true);
+      window.dispatchEvent(new Event("cart-updated"));
     } catch (error) {
       console.error(error);
       setSnackMessage("Gagal memasukkan ke keranjang");
@@ -265,20 +266,27 @@ export default function ProductPage() {
 
       <Box sx={{ display: "flex", gap: 6, p: 5 }}>
         {/* LEFT SIDE - IMAGE */}
-        <Box sx={{ flex: 1 }}>
+        <Box sx={{ flex: 1, flexShrink: 0 }}>
           <Box
             sx={{
               background: "#f5f5f5",
               borderRadius: 4,
+              width: "100%",
               height: 420,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
+              overflow: "hidden",
             }}
           >
             <img
-              src={image}
-              style={{ maxHeight: "80%", objectFit: "contain" }}
+              src={`/api/${image}`}
+              alt={product?.name}
+              style={{
+                maxWidth: "100%",
+                maxHeight: "100%",
+                objectFit: "contain",
+              }}
             />
           </Box>
 
@@ -291,7 +299,7 @@ export default function ProductPage() {
                 <Box
                   key={i}
                   component="img"
-                  src={v.picture}
+                  src={`/api/${v.picture}`}
                   onClick={() => setSelectedVariantIndex(i)}
                   sx={{
                     width: 80,
@@ -316,7 +324,7 @@ export default function ProductPage() {
         </Box>
 
         {/* RIGHT SIDE */}
-        <Box sx={{ flex: 1.2 }}>
+        <Box sx={{ flex: 0.6 }}>
           {/* TITLE */}
           <Typography variant="h4" fontWeight={700}>
             {product?.name}
@@ -377,7 +385,7 @@ export default function ProductPage() {
               {product?.shop?.profile_pic ? (
                 <Box
                   component="img"
-                  src={product.shop.profile_pic}
+                  src={`/api/${product.shop.profile_pic}`}
                   sx={{
                     width: 50,
                     height: 50,
@@ -495,7 +503,7 @@ export default function ProductPage() {
                 >
                   <Box
                     component="img"
-                    src={color.picture}
+                    src={`/api/${color.picture}`}
                     sx={{
                       width: 18,
                       height: 18,
@@ -769,7 +777,7 @@ export default function ProductPage() {
 
                   {item.picture && (
                     <img
-                      src={item.picture}
+                      src={`/api/${item.picture}`}
                       alt=""
                       style={{
                         height: "200px",

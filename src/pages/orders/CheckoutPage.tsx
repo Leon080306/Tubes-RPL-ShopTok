@@ -223,9 +223,8 @@ export default function CheckoutPage() {
     const subtotal = selectedItems.reduce(
         (sum, item) => sum + Number(item.variant.price) * item.quantity, 0
     );
-    const tax = subtotal * 0.1;
     const shippingCost = 0;
-    const total = subtotal + tax + shippingCost;
+    const total = subtotal + shippingCost;
 
     // ================= STOCK WARNINGS =================
     const hasStockIssue = selectedItems.some(
@@ -364,7 +363,7 @@ export default function CheckoutPage() {
                                             }}>
                                                 <Box
                                                     component="img"
-                                                    src={item.variant.picture || "/placeholder.png"}
+                                                    src={item.variant.picture ? `/api/${item.variant.picture}` : "/placeholder.png"}
                                                     sx={{ width: 80, height: 80, objectFit: "contain" }}
                                                 />
                                             </Box>
@@ -751,7 +750,6 @@ export default function CheckoutPage() {
                         <Box mt={3}>
                             {[
                                 { label: "Sub Total", value: formatPrice(subtotal) },
-                                { label: "Tax (10%)", value: formatPrice(tax) },
                                 { label: "Coupon Discount", value: `-${formatPrice(0)}` },
                                 { label: "Shipping Cost", value: formatPrice(shippingCost) },
                             ].map((item) => (

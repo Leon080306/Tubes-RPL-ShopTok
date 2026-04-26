@@ -28,7 +28,7 @@ type Category = {
 
 export default function CategoryManagementPage() {
     const navigate = useNavigate();
-    const themeColor = "#16a34a";
+    const themeColor = "#3b82f6";
 
     const [categories, setCategories] = useState<Category[]>([]);
     const [loading, setLoading] = useState(true);
@@ -176,7 +176,7 @@ export default function CategoryManagementPage() {
                 {filteredCategories.map((cat) => (
                     <Box key={cat.id} sx={{ display: "flex", px: 3, py: 2 }}>
                         <Box sx={{ width: "40%", display: "flex", gap: 2 }}>
-                            <img src={cat.icon || ""} alt="" style={{
+                            <img src={`/api/${cat.icon}`} alt="" style={{
                                 width: "56px",
                                 height: "56px",
                             }} />
