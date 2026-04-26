@@ -177,12 +177,6 @@ export default function OrderDetailPage() {
 
     const { address, shop, orderItems, status: orderStatus, amount_paid, createdAt, updatedAt } = currentOrder;
 
-    // Calculate subtotal from items
-    const subtotal = orderItems.reduce(
-        (sum, item) => sum + Number(item.variant.price) * item.quantity,
-        0
-    );
-
     return (
         <Paper sx={{ p: 3 }}>
             {/* BACK BUTTON + ORDER ID */}
@@ -395,7 +389,7 @@ export default function OrderDetailPage() {
                                     Merchandise Subtotal
                                 </TableCell>
                                 <TableCell width="30%" align="right">
-                                    {formatPrice(subtotal)}
+                                    {formatPrice(amount_paid)}
                                 </TableCell>
                             </TableRow>
                             <TableRow>

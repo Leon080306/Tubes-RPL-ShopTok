@@ -773,7 +773,8 @@ export default function ProductPage() {
                     {item.user?.first_name + " " + item.user?.last_name || "U"}
                   </Typography>
 
-                  <Typography mt={1}>{item.description}</Typography>
+                  <Typography mt={1} fontWeight={500}>{item.title}</Typography>
+                  <Typography mt={1} fontSize={14} >{item.description}</Typography>
 
                   {item.picture && (
                     <img
